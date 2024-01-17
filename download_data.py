@@ -1,10 +1,14 @@
+import datetime
 import re
+import time
 
 import bs4
 import pandas as pd
 import requests
 
 from db_connect import conn
+
+date_format = '%Y-%m-%d %H:%M:%S'
 
 
 def get_ptt_article_list(ptt_url, page=''):
@@ -80,26 +84,83 @@ def get_ptt_newest_page_index(ptt_url):
 
 
 if __name__ == 'main':
-    # download head
+
+    upload_date = datetime.datetime.now().strftime(date_format)
+    # check newest page
     newest_page = int(get_ptt_newest_page_index(ptt_url=f"https://www.ptt.cc/bbs/Stock/index.html"))
     n_page = 100
-    res_list = []
-    for tmp_page in range(newest_page - n_page, newest_page):
+
+    ## check header have downloaded
+    if 'header' in pd.read_sql("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'header';", conn)[
+        'name'].values:
+        last_downloaded_page = int(pd.read_sql("select max(page) max_page from header", conn)['max_page'][0])
+        downloaded_AID_set = set(pd.read_sql("select AID from header", conn)['AID'])
+    else:
+        last_downloaded_page = 0
+        downloaded_AID_set = {}
+
+    ## download header
+    title_df_list = []
+    start_download_page = max(last_downloaded_page, newest_page - n_page)
+    for tmp_page in range(start_download_page, newest_page + 1):
         title_dict = get_ptt_article_list(ptt_url=f"https://www.ptt.cc/bbs/Stock/index", page=str(tmp_page))
         title_df = pd.DataFrame(title_dict)
-        res_list.append(title_df)
-    all_res = pd.concat(res_list, ignore_index=True)
+        title_df_list.append(title_df)
+    all_title_df = pd.concat(title_df_list, ignore_index=True)
+    all_title_df = all_title_df[~all_title_df['AID'].isin(downloaded_AID_set)]
+    all_title_df['upload_date'] = upload_date
 
-    all_res.to_sql('header', conn, if_exists='append', index=False)
+    # save to db
+    # all_title_df = pd.read_sql('select * from header',conn)
+    all_title_df.to_sql('header', conn, if_exists='append', index=False)
+    # all_title_df.to_sql('header', conn, if_exists='replace', index=False)
     conn.commit()
 
-    # download text
-    AID_list = all_res['AID']
-    res_list = []
-    for i in range(len(AID_list)):
-        # i = 0
-        res_list.append(get_ptt_article_info(article_AID=AID_list[i]))
+    ## download text by header
+    # header from db
+    if 'info' in pd.read_sql("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'info';", conn)[
+        'name'].values:
+        # 若已經有info此table代表可能抓過資料了，為了避免抓到重複的內文，須對AID做篩選
+        all_title_df = pd.read_sql("select * from header where AID not in (select AID from info)", conn)
+    else:
+        all_title_df = pd.read_sql("select * from header ", conn)
 
-    all_res = pd.DataFrame([x for x in res_list if x is not None])
-    all_res.to_sql('info', conn, if_exists='append', index=False)
+    AID_list = all_title_df['AID']
+    info_df_list = []
+    for i in range(len(AID_list)):
+        if i % 100 == 0:
+            print(i)
+        info_df_list.append(get_ptt_article_info(article_AID=AID_list[i]))
+
+    # preprocess data
+    # all_info_df = pd.read_sql("select * from info", conn)
+    all_info_df = pd.DataFrame([x for x in info_df_list if x is not None])
+
+    # spilt author
+    auther_pattern = r"(.*?)\((.*)\)"
+    tmp_series = all_info_df['author'].apply(lambda x: re.search(auther_pattern, x))
+    all_info_df['author0'] = tmp_series.apply(lambda x: x.groups()[0] if x is not None else None)
+    all_info_df['author1'] = tmp_series.apply(lambda x: x.groups()[1] if x is not None else None)
+
+    # spilt title category
+    title_pattern = r".*\[(.*)\].*"
+    all_info_df['category'] = all_info_df['title'].apply(lambda x: re.search(title_pattern, x))
+    all_info_df['category'] = all_info_df['category'].apply(lambda x: x.groups()[0] if x is not None else None)
+
+    # check is Re
+    re_pattern = r"Re: \[(.*)\].*"
+    all_info_df['is_re'] = all_info_df['title'].apply(lambda x: bool(re.match(re_pattern, x)))
+
+    # format date
+    all_info_df['date_format'] = all_info_df['date'].apply(
+        lambda x: pd.to_datetime(x, format='%a %b %d %H:%M:%S %Y').strftime(date_format))
+
+    # url
+    all_info_df['url'] = all_info_df['AID'].apply(lambda x: "https://www.ptt.cc" + x)
+
+    # upload date
+    all_info_df['upload_date'] = upload_date
+
+    all_info_df.to_sql('info', conn, if_exists='append', index=False)
+    # all_info_df.to_sql('info', conn, if_exists='replace', index=False)
     conn.commit()
