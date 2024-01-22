@@ -6,9 +6,8 @@ import bs4
 import pandas as pd
 import requests
 
+from const import upload_date, date_format
 from db_connect import conn
-
-date_format = '%Y-%m-%d %H:%M:%S'
 
 
 def get_ptt_article_list(ptt_url, page=''):
@@ -83,14 +82,15 @@ def get_ptt_newest_page_index(ptt_url):
     return str(int(match.group(1)) + 1)
 
 
-if __name__ == 'main':
+if __name__ == '__main__':
 
-    upload_date = datetime.datetime.now().strftime(date_format)
+    print('Start downloaded page')
     # check newest page
     newest_page = int(get_ptt_newest_page_index(ptt_url=f"https://www.ptt.cc/bbs/Stock/index.html"))
     n_page = 100
 
     ## check header have downloaded
+
     if 'header' in pd.read_sql("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'header';", conn)[
         'name'].values:
         last_downloaded_page = int(pd.read_sql("select max(page) max_page from header", conn)['max_page'][0])
@@ -102,6 +102,8 @@ if __name__ == 'main':
     ## download header
     title_df_list = []
     start_download_page = max(last_downloaded_page, newest_page - n_page)
+    print(f'    start_download_page:{start_download_page}')
+    print(f'    newest_page:{newest_page}')
     for tmp_page in range(start_download_page, newest_page + 1):
         title_dict = get_ptt_article_list(ptt_url=f"https://www.ptt.cc/bbs/Stock/index", page=str(tmp_page))
         title_df = pd.DataFrame(title_dict)
@@ -115,7 +117,9 @@ if __name__ == 'main':
     all_title_df.to_sql('header', conn, if_exists='append', index=False)
     # all_title_df.to_sql('header', conn, if_exists='replace', index=False)
     conn.commit()
+    print('Emd downloaded page')
 
+    print('Start downloaded text by header')
     ## download text by header
     # header from db
     if 'info' in pd.read_sql("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'info';", conn)[
@@ -126,6 +130,7 @@ if __name__ == 'main':
         all_title_df = pd.read_sql("select * from header ", conn)
 
     AID_list = all_title_df['AID']
+    print(f' 共有{len(AID_list)}篇文章要下載')
     info_df_list = []
     for i in range(len(AID_list)):
         if i % 100 == 0:
@@ -136,31 +141,36 @@ if __name__ == 'main':
     # all_info_df = pd.read_sql("select * from info", conn)
     all_info_df = pd.DataFrame([x for x in info_df_list if x is not None])
 
-    # spilt author
-    auther_pattern = r"(.*?)\((.*)\)"
-    tmp_series = all_info_df['author'].apply(lambda x: re.search(auther_pattern, x))
-    all_info_df['author0'] = tmp_series.apply(lambda x: x.groups()[0] if x is not None else None)
-    all_info_df['author1'] = tmp_series.apply(lambda x: x.groups()[1] if x is not None else None)
+    if not all_info_df.empty:
 
-    # spilt title category
-    title_pattern = r".*\[(.*)\].*"
-    all_info_df['category'] = all_info_df['title'].apply(lambda x: re.search(title_pattern, x))
-    all_info_df['category'] = all_info_df['category'].apply(lambda x: x.groups()[0] if x is not None else None)
+        # spilt author
+        auther_pattern = r"(.*?)\((.*)\)"
+        tmp_series = all_info_df['author'].apply(lambda x: re.search(auther_pattern, x))
+        all_info_df['author0'] = tmp_series.apply(lambda x: x.groups()[0] if x is not None else None)
+        all_info_df['author1'] = tmp_series.apply(lambda x: x.groups()[1] if x is not None else None)
 
-    # check is Re
-    re_pattern = r"Re: \[(.*)\].*"
-    all_info_df['is_re'] = all_info_df['title'].apply(lambda x: bool(re.match(re_pattern, x)))
+        # spilt title category
+        title_pattern = r".*\[(.*)\].*"
+        all_info_df['category'] = all_info_df['title'].apply(lambda x: re.search(title_pattern, x))
+        all_info_df['category'] = all_info_df['category'].apply(lambda x: x.groups()[0] if x is not None else None)
 
-    # format date
-    all_info_df['date_format'] = all_info_df['date'].apply(
-        lambda x: pd.to_datetime(x, format='%a %b %d %H:%M:%S %Y').strftime(date_format))
+        # check is Re
+        re_pattern = r"Re: \[(.*)\].*"
+        all_info_df['is_re'] = all_info_df['title'].apply(lambda x: bool(re.match(re_pattern, x)))
 
-    # url
-    all_info_df['url'] = all_info_df['AID'].apply(lambda x: "https://www.ptt.cc" + x)
+        # format date
+        all_info_df['date_format'] = all_info_df['date'].apply(
+            lambda x: pd.to_datetime(x, format='%a %b %d %H:%M:%S %Y').strftime(date_format))
 
-    # upload date
-    all_info_df['upload_date'] = upload_date
+        # url
+        all_info_df['url'] = all_info_df['AID'].apply(lambda x: "https://www.ptt.cc" + x)
 
-    all_info_df.to_sql('info', conn, if_exists='append', index=False)
-    # all_info_df.to_sql('info', conn, if_exists='replace', index=False)
-    conn.commit()
+        # upload date
+        all_info_df['upload_date'] = upload_date
+
+        all_info_df.to_sql('info', conn, if_exists='append', index=False)
+        # all_info_df.to_sql('info', conn, if_exists='replace', index=False)
+        conn.commit()
+        print('End downloaded text by header')
+    else:
+        print('一篇文章都沒有。')
