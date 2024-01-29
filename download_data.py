@@ -1,7 +1,4 @@
-import datetime
 import re
-import time
-
 import bs4
 import pandas as pd
 import requests
@@ -102,6 +99,7 @@ if __name__ == '__main__':
     ## download header
     title_df_list = []
     start_download_page = max(last_downloaded_page, newest_page - n_page)
+    # start_download_page = newest_page - n_page
     print(f'    start_download_page:{start_download_page}')
     print(f'    newest_page:{newest_page}')
     for tmp_page in range(start_download_page, newest_page + 1):
@@ -117,7 +115,7 @@ if __name__ == '__main__':
     all_title_df.to_sql('header', conn, if_exists='append', index=False)
     # all_title_df.to_sql('header', conn, if_exists='replace', index=False)
     conn.commit()
-    print('Emd downloaded page')
+    print('End downloaded page')
 
     print('Start downloaded text by header')
     ## download text by header
@@ -168,6 +166,7 @@ if __name__ == '__main__':
         # upload date
         all_info_df['upload_date'] = upload_date
 
+        print(f' 共存入info {len(all_info_df)}篇文章')
         all_info_df.to_sql('info', conn, if_exists='append', index=False)
         # all_info_df.to_sql('info', conn, if_exists='replace', index=False)
         conn.commit()
