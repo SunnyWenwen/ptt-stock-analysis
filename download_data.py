@@ -132,44 +132,49 @@ if __name__ == '__main__':
     info_df_list = []
     for i in range(len(AID_list)):
         if i % 100 == 0:
-            print(i)
+            print(f'已處理{i}個AID')
         info_df_list.append(get_ptt_article_info(article_AID=AID_list[i]))
+        if (i % 2000 == 0) or (i == len(AID_list) - 1):
+            # 每兩千儲存一次文章
+            # preprocess data
+            # all_info_df = pd.read_sql("select * from info", conn)
+            all_info_df = pd.DataFrame([x for x in info_df_list if x is not None])
 
-    # preprocess data
-    # all_info_df = pd.read_sql("select * from info", conn)
-    all_info_df = pd.DataFrame([x for x in info_df_list if x is not None])
+            if not all_info_df.empty:
 
-    if not all_info_df.empty:
+                # spilt author
+                auther_pattern = r"(.*?)\((.*)\)"
+                tmp_series = all_info_df['author'].apply(lambda x: re.search(auther_pattern, x))
+                all_info_df['author0'] = tmp_series.apply(lambda x: x.groups()[0] if x is not None else None)
+                all_info_df['author1'] = tmp_series.apply(lambda x: x.groups()[1] if x is not None else None)
 
-        # spilt author
-        auther_pattern = r"(.*?)\((.*)\)"
-        tmp_series = all_info_df['author'].apply(lambda x: re.search(auther_pattern, x))
-        all_info_df['author0'] = tmp_series.apply(lambda x: x.groups()[0] if x is not None else None)
-        all_info_df['author1'] = tmp_series.apply(lambda x: x.groups()[1] if x is not None else None)
+                # spilt title category
+                title_pattern = r".*\[(.*)\].*"
+                all_info_df['category'] = all_info_df['title'].apply(lambda x: re.search(title_pattern, x))
+                all_info_df['category'] = all_info_df['category'].apply(
+                    lambda x: x.groups()[0] if x is not None else None)
 
-        # spilt title category
-        title_pattern = r".*\[(.*)\].*"
-        all_info_df['category'] = all_info_df['title'].apply(lambda x: re.search(title_pattern, x))
-        all_info_df['category'] = all_info_df['category'].apply(lambda x: x.groups()[0] if x is not None else None)
+                # check is Re
+                re_pattern = r"Re: \[(.*)\].*"
+                all_info_df['is_re'] = all_info_df['title'].apply(lambda x: bool(re.match(re_pattern, x)))
 
-        # check is Re
-        re_pattern = r"Re: \[(.*)\].*"
-        all_info_df['is_re'] = all_info_df['title'].apply(lambda x: bool(re.match(re_pattern, x)))
+                # format date
+                all_info_df['date_format'] = all_info_df['date'].apply(
+                    lambda x: pd.to_datetime(x, format='%a %b %d %H:%M:%S %Y').strftime(date_format))
 
-        # format date
-        all_info_df['date_format'] = all_info_df['date'].apply(
-            lambda x: pd.to_datetime(x, format='%a %b %d %H:%M:%S %Y').strftime(date_format))
+                # url
+                all_info_df['url'] = all_info_df['AID'].apply(lambda x: "https://www.ptt.cc" + x)
 
-        # url
-        all_info_df['url'] = all_info_df['AID'].apply(lambda x: "https://www.ptt.cc" + x)
+                # upload date
+                all_info_df['upload_date'] = upload_date
 
-        # upload date
-        all_info_df['upload_date'] = upload_date
+                print(f' 存入info {len(all_info_df)}篇文章')
+                all_info_df.to_sql('info', conn, if_exists='append', index=False)
+                # all_info_df.to_sql('info', conn, if_exists='replace', index=False)
+                conn.commit()
+            else:
+                print('一篇文章都沒有。')
+            # 清空
+            info_df_list = []
 
-        print(f' 共存入info {len(all_info_df)}篇文章')
-        all_info_df.to_sql('info', conn, if_exists='append', index=False)
-        # all_info_df.to_sql('info', conn, if_exists='replace', index=False)
-        conn.commit()
-        print('End downloaded text by header')
-    else:
-        print('一篇文章都沒有。')
+    print('End downloaded text by header')
