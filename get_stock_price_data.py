@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List
 
+import numpy as np
 from twstock import Stock
 
 
@@ -27,47 +28,61 @@ class MyStock(Stock):
         """
 
         # 確保可以抓到N日均價
-        pre_month = target_date - timedelta(days=n_daily_average * 2)
+        pre_month = target_date - timedelta(days=n_daily_average * 3)
         self.fetch_from_to(pre_month.year, pre_month.month, target_date.year, target_date.month)
         # 去掉晚於target_date的資料
         self.data = [tmp_data for tmp_data in self.data if tmp_data.date <= target_date]
         # 取得target_date的N日均價
 
-        return self.moving_average(self.price, n_daily_average)[-1]
+        return self.moving_average(self.price, n_daily_average)[-1], self.data[-1][0]
 
 
-def back_test(sid, start_backtest_date: datetime, n_daily_average=5, test_day_list: List = [30, 60, 120, 180, 360]):
+def back_test(sid, start_backtest_date: datetime, n_daily_average=5, test_day_list: List = [30, 60, 120, 180, 360],
+              silent=False):
     # sid = '2330'
     # start_backtest_date = datetime(year=2023, month=9, day=18)
     # test_day_list: List = [30, 60, 120, 180, 360]
     # n_daily_average = 5
     # 不可早於今天
     assert start_backtest_date <= datetime.today(), f'start_backtest_date不可早於今天'
-    n_daily_average = 5
     # 確認時間格式
     assert isinstance(start_backtest_date, datetime)
+    # 確認是否有抓到
+    try:
+        my_stock = MyStock(sid, initial_fetch=False)
+    except:
+        print(f'無法抓取股票代號: {sid}的資料')
+        return [None]
 
-    my_stock = MyStock(sid, initial_fetch=False)
-    start_stock_price = my_stock.get_target_date_n_daily_average_price(start_backtest_date, n_daily_average)
-    print(f'起始日期: {start_backtest_date}, 起始股價: {start_stock_price}, N日均價: {n_daily_average}日')
+    start_stock_price, real_start_backtest_date = my_stock.get_target_date_n_daily_average_price(start_backtest_date,
+                                                                                                 n_daily_average)
+    print(f'起始日期: {real_start_backtest_date}, 起始股價: {start_stock_price}, N日均價: {n_daily_average}日')
+    result = []
     for i in test_day_list:
         test_date = start_backtest_date + timedelta(days=i)
         if test_date > datetime.today():
-            print(f'測試日期: {test_date}超過今天，無法進行測試')
+            if not silent:
+                print(f'測試日期: {test_date}超過今天，無法進行測試')
             continue
-        test_stock_price = my_stock.get_target_date_n_daily_average_price(test_date, n_daily_average)
-        print(
-            f"測試日期: {test_date}(經過{(test_date - start_backtest_date).days}天), "
-            f"測試股價: {test_stock_price}, "
-            f"起始股價: {start_stock_price}, "
-            f"漲跌幅: {(test_stock_price / start_stock_price - 1) * 100:.2f}%,"
-            f"年均報酬率: {((test_stock_price / start_stock_price) ** (365 / i) - 1) * 100:.2f}%")
+        test_stock_price, real_test_start_backtest_date = my_stock.get_target_date_n_daily_average_price(test_date,
+                                                                                                         n_daily_average)
+
+        day_range = (real_test_start_backtest_date - real_start_backtest_date).days
+        IRR = ((test_stock_price / start_stock_price) ** (365 / day_range) - 1) * 100
+        IRR = round(IRR, 2)
+        result.append(IRR)
+        if not silent:
+            print(
+                f"測試日期: {real_test_start_backtest_date}(經過{day_range}天), "
+                f"測試股價: {test_stock_price}, "
+                f"起始股價: {start_stock_price}, "
+                f"漲跌幅: {(test_stock_price / start_stock_price - 1) * 100:.2f}%,"
+                f"年均報酬率: {IRR:.2f}%")
+    return result if result else [None]
 
 
 if __name__ == '__main__':
-    back_test('2330', datetime(year=2023, month=9, day=18), 5)
-
-###
+    back_test('2330', datetime(year=2022, month=9, day=16), 5)
 
 # stock.a = fetch_from1
 #
