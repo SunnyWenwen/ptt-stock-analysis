@@ -18,10 +18,10 @@ def get_ptt_article_list(ptt_url, page=''):
         titles = soup.find_all('div', 'title')
         title_dict = [{'page': page, 'AID': tag.contents[1].attrs['href'], 'title': tag.text.strip()} for tag in titles
                       if '刪除' not in tag.text]
-        print(f"抓取{url}成功")
+        print(f"抓取文章列表'{url}'成功")
         return title_dict
     else:
-        print(f"抓取{url}失敗")
+        print(f"抓取文章列表'{url}'失敗")
 
 
 def get_ptt_article_info(article_AID):
@@ -30,7 +30,7 @@ def get_ptt_article_info(article_AID):
     response = requests.get(article_url, headers=my_headers)
     try:
         if response.ok:
-            print(f"抓取{article_url}成功")
+            print(f"抓取文章'{article_url}'成功")
             soup = bs4.BeautifulSoup(response.text, "html.parser")
             res = dict()
             res['AID'] = article_AID
@@ -61,9 +61,9 @@ def get_ptt_article_info(article_AID):
             res['content'] = '\n'.join(contents)
             return res
         else:
-            print(f"抓取{article_url}失敗")
+            print(f"抓取文章'{article_url}'失敗")
     except BaseException:
-        print(f'處理{article_url}資料時發生未預期錯誤')
+        print(f"抓取文章'{article_url}'進行處理時發生未預期錯誤")
 
 
 def get_ptt_newest_page_index(ptt_url):
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     print('Start downloaded page')
     # check newest page
     newest_page = int(get_ptt_newest_page_index(ptt_url=f"https://www.ptt.cc/bbs/Stock/index.html"))
-    n_page = 100
+    max_n_page = 300
 
     ## check header have downloaded
 
@@ -98,7 +98,8 @@ if __name__ == '__main__':
 
     ## download header
     title_df_list = []
-    start_download_page = max(last_downloaded_page, newest_page - n_page)
+    print(f'    last_downloaded_page:{last_downloaded_page}')
+    start_download_page = max(last_downloaded_page, newest_page - max_n_page)
     # start_download_page = newest_page - n_page
     print(f'    start_download_page:{start_download_page}')
     print(f'    newest_page:{newest_page}')

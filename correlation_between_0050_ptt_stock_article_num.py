@@ -16,7 +16,7 @@ if __name__ == '__main__':
     df_ptt_ct.rename(columns={'index': 'date'}, inplace=True)
 
     # 抓取每天的大盤漲跌
-    from get_stock_price_data import MyStock
+    from import_tw_stock_analysis import MyStock
 
     stock = MyStock('0050').fetch_from(2023, 1)
     df_0050 = pd.DataFrame(stock)[['date', 'close', 'change']]
