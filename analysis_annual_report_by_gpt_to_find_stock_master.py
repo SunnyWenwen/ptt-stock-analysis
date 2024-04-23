@@ -15,7 +15,7 @@ else:
 
 target_data = target_data[target_data['category'] == '心得']
 target_data = target_data[target_data['title'].apply(lambda x: bool(re.search(r'年報', x)))]
-target_data = target_data[target_data['is_re'] == 0]
+target_data = target_data[target_data['is_re'] == 0]  # 回文的去掉
 target_data = target_data.reset_index(drop=True)
 
 # start use gpt analysis article
