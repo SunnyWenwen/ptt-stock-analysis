@@ -24,16 +24,16 @@ def get_ptt_article_list(ptt_url, page=''):
         print(f"抓取文章列表'{url}'失敗")
 
 
-def get_ptt_article_info(article_AID):
+def get_ptt_article_info(page, article_AID):  # article_AID = '/bbs/Stock/M.1709714209.A.657.html'
     article_url = f"https://www.ptt.cc" + article_AID
     my_headers = {'cookie': 'over18=1;'}
     response = requests.get(article_url, headers=my_headers)
     try:
         if response.ok:
-            print(f"抓取文章'{article_url}'成功")
-            soup = bs4.BeautifulSoup(response.text, "html.parser")
+            print(f"抓取page:{page} 文章'{article_url}'成功，開始進行處理。")
             res = dict()
             res['AID'] = article_AID
+            soup = bs4.BeautifulSoup(response.text, "html.parser")
 
             ## PTT 上方4個欄位
             header = soup.find_all('span', 'article-meta-value')
@@ -59,11 +59,20 @@ def get_ptt_article_info(article_AID):
             contents = texts[2:]
             # 內容
             res['content'] = '\n'.join(contents)
+            print(f"處理page:{page} 文章'{article_url}'成功")
             return res
         else:
             print(f"抓取文章'{article_url}'失敗")
+            # 紀錄該AID抓取失敗，避免下次重複處理
+            fail_df = pd.DataFrame(
+                [{'page': page, 'AID': article_AID, 'upload_date': upload_date, 'error': '抓取文章失敗'}])
+            fail_df.to_sql('fail_download_aid', conn, if_exists='append', index=False)
     except BaseException:
-        print(f"抓取文章'{article_url}'進行處理時發生未預期錯誤")
+        print(f"處理page:{page} 文章'{article_url}'進行處理時發生未預期錯誤")
+        # 紀錄該AID抓取失敗，避免下次重複處理
+        fail_df = pd.DataFrame(
+            [{'page': page, 'AID': article_AID, 'upload_date': upload_date, 'error': '處理文章時發生未預期錯誤'}])
+        fail_df.to_sql('fail_download_aid', conn, if_exists='append', index=False)
 
 
 def get_ptt_newest_page_index(ptt_url):
@@ -121,21 +130,30 @@ if __name__ == '__main__':
     print('Start downloaded text by header')
     ## download text by header
     # header from db
+    get_header_sql = "select * from header where 0=0"
+    # 若已經有info此table代表可能抓過資料了，為了避免抓到重複的內文，須對AID做篩選
     if 'info' in pd.read_sql("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'info';", conn)[
         'name'].values:
-        # 若已經有info此table代表可能抓過資料了，為了避免抓到重複的內文，須對AID做篩選
-        all_title_df = pd.read_sql("select * from header where AID not in (select AID from info)", conn)
-    else:
-        all_title_df = pd.read_sql("select * from header ", conn)
+        get_header_sql += " and AID not in (select AID from info)"
+    # 若已經有fail_download_aid此table代表可能抓過資料了，且抓取失敗，為了避免抓到重複的內文，須對AID做篩選
+    if 'fail_download_aid' in pd.read_sql(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'fail_download_aid';", conn)['name'].values:
+        get_header_sql += " and AID not in (select AID from fail_download_aid)"
 
-    AID_list = all_title_df['AID']
-    print(f' 共有{len(AID_list)}篇文章要下載')
+    all_title_df = pd.read_sql(get_header_sql, conn)
+
+    all_title_df.sort_values(by='page', inplace=True, ignore_index=True)  # 依照page排序，早的資料先抓
+
+    # page+AID的tuple
+    AID_tuple_list = all_title_df.apply(lambda x: (x['page'], x['AID']), axis=1).tolist()
+    print(f' 共有{len(AID_tuple_list)}篇文章要下載')
     info_df_list = []
-    for i in range(len(AID_list)):
+    for i in range(len(AID_tuple_list)):
+        AID_tuple = AID_tuple_list[i]
         if i % 100 == 0:
             print(f'已處理{i}個AID')
-        info_df_list.append(get_ptt_article_info(article_AID=AID_list[i]))
-        if (i % 2000 == 0) or (i == len(AID_list) - 1):
+        info_df_list.append(get_ptt_article_info(page=AID_tuple[0], article_AID=AID_tuple[1]))
+        if (i % 2000 == 0) or (i == len(AID_tuple_list) - 1):
             # 每兩千儲存一次文章
             # preprocess data
             # all_info_df = pd.read_sql("select * from info", conn)
