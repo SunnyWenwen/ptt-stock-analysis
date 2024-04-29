@@ -3,6 +3,7 @@ import pandas as pd
 
 from db_connect import conn
 from import_tw_stock_analysis import MyStock
+from utils import get_stock_code_from_title, back_test_stock_code_and_date
 
 # 用股票高手的ID去找出他的[標的]文章
 # 因為股票高手可能有多篇年報心得文，為避免資料重複，先以ID為group，把AID的資訊串在一起
@@ -28,30 +29,14 @@ on
 
 stock_master.sort_values(by=['target_date'], inplace=True, ignore_index=True, ascending=False)
 # 塞選出target_title內四位數字的標的代碼
-import re
-
 # 抓出標的代碼
-stock_master['target_code'] = stock_master['target_title'].apply(
-    lambda x: re.search(r'\d{4}', x).group() if re.search(r'\d{4}', x) else None)
+stock_master['target_code'] = stock_master['target_title'].apply(get_stock_code_from_title)
 
 # 去掉部分標的代碼為空的資料
 stock_master = stock_master[stock_master['target_code'].notnull()]
 
 # 用回測的方式去找出標的的報酬率
-profit_dict_list = []
-for itr, row in stock_master.iterrows():
-    # row = see.loc[12]
-    tmp_profit_dict = {}
-    tmp_profit_dict['target_code'] = row['target_code']
-    tmp_profit_dict['target_date'] = row['target_date']
-    try:
-        tmp_profit_dict.update(MyStock(row['target_code']).back_test(pd.to_datetime(row['target_date'])))
-        tmp_profit_dict['is_success_get_data'] = True
-    except:
-        tmp_profit_dict['is_success_get_data'] = False
-    profit_dict_list.append(tmp_profit_dict)
-
-profit_df = pd.DataFrame(profit_dict_list)
+profit_df = back_test_stock_code_and_date(stock_master[['target_code', 'target_date']])
 result = stock_master.merge(profit_df, on=['target_code', 'target_date'], how='left')
 
 result.to_csv('target.csv', encoding='BIG5')
