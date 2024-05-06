@@ -1,6 +1,7 @@
 # 過濾出賺錢名單的標的文
 import pandas as pd
 
+from config import csv_path
 from db_connect import conn
 from import_tw_stock_analysis import MyStock
 from utils import get_stock_code_from_title, back_test_stock_code_and_date
@@ -39,4 +40,4 @@ stock_master = stock_master[stock_master['target_code'].notnull()]
 profit_df = back_test_stock_code_and_date(stock_master[['target_code', 'target_date']])
 result = stock_master.merge(profit_df, on=['target_code', 'target_date'], how='left')
 
-result.to_csv('target.csv', encoding='BIG5')
+result.to_csv(csv_path + 'target.csv', encoding='BIG5')

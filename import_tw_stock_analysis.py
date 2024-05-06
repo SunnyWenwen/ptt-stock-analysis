@@ -1,4 +1,3 @@
-
 # 從另一個資料夾import module
 import sys
 import os
@@ -10,5 +9,6 @@ from get_stock_price_data import MyStock
 MyStock = MyStock
 
 from create_downloaded_stock_price_db import create_stock_price_table, create_stock_header_table
+
 create_stock_price_table()
 create_stock_header_table()

@@ -2,6 +2,7 @@
 # 抓取ptt所有標的文
 import pandas as pd
 
+from config import csv_path, xlsx_path
 from db_connect import conn
 from utils import get_stock_code_from_title, back_test_stock_code_and_date
 
@@ -24,14 +25,14 @@ df = df[~df['title'].str.contains('空')].reset_index(drop=True)
 profit_df = back_test_stock_code_and_date(df[['target_code', 'date_format']], 'target_code', 'date_format')
 
 # 暫時儲存起來
-profit_df.to_csv('profit_df.csv', encoding='BIG5', index=False)
+profit_df.to_csv(csv_path + 'profit_df.csv', encoding='BIG5', index=False)
 # profit_df = pd.read_csv('profit_df.csv', encoding='BIG5')
 
 # 合併回原本的資料
 result = df.merge(profit_df, on=['target_code', 'date_format'], how='left')
 
 # 儲存
-result.to_csv('target_article_profit.csv', encoding='UTF-8', index=False)
+result.to_csv(csv_path + 'target_article_profit.csv', encoding='UTF-8', index=False)
 # xlsm格式
-result.to_excel('target_article_profit.xlsx', index=False)
+result.to_excel(xlsx_path + 'target_article_profit.xlsx', index=False)
 # result = pd.read_csv('target_article_profit.csv', encoding='UTF-8')

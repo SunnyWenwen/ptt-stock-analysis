@@ -2,8 +2,10 @@ import sqlite3
 
 import pandas as pd
 
-dbfile = "data.db"
-conn = sqlite3.connect(dbfile)
+from config import db_path
+
+db_file = db_path + "data.db"
+conn = sqlite3.connect(db_file)
 
 # rows = conn.execute("select * from header")
 if __name__ == 'main':

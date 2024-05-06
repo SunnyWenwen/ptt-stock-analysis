@@ -1,8 +1,10 @@
 # 分析
 import pandas as pd
 
+from config import csv_path, xlsx_path
+
 # target_article_profit.csv 資料來自於 backtest_all_target_article.py
-result = pd.read_csv('target_article_profit.csv', encoding='UTF-8')
+result = pd.read_csv(csv_path + 'target_article_profit.csv', encoding='UTF-8')
 # 留下有抓到資料的
 result = result[result['is_success_get_data'] == True].reset_index(drop=True)
 # 留下至少30天的
@@ -23,7 +25,7 @@ auth_perf_df = result.groupby(['author0'], as_index=False).aggregate(
 auth_perf_df = auth_perf_df[auth_perf_df['CT'] >= 5].reset_index(drop=True)
 
 # xlsx
-auth_perf_df.to_excel('auth_perf_df.xlsx', index=False)
+auth_perf_df.to_excel(xlsx_path + 'auth_perf_df.xlsx', index=False)
 
 # 30天獲利最高的人
 perf30 = auth_perf_df.sort_values(by=['30'], ascending=False).head(10)
@@ -40,7 +42,7 @@ perf360 = auth_perf_df.sort_values(by=['360'], ascending=False).head(10)
 high_perf_auth = pd.concat([perf30['author0'], perf60['author0'], perf120['author0'], perf180['author0'],
                             perf360['author0']]).drop_duplicates().reset_index(drop=True)
 # 寫成csv
-high_perf_auth.to_csv('high_perf_auth.csv', encoding='UTF-8', index=False)
+high_perf_auth.to_csv(csv_path + 'high_perf_auth.csv', encoding='UTF-8', index=False)
 
 # 查看某人
 # see = result[result['author0'] == 'agogo1202 ']
