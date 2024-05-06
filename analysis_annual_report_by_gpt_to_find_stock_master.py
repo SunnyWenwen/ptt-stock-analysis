@@ -1,4 +1,4 @@
-from const import upload_date
+from config import upload_date
 from db_connect import conn
 import pandas as pd
 import re

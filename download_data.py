@@ -3,7 +3,7 @@ import bs4
 import pandas as pd
 import requests
 
-from const import upload_date, date_format
+from config import upload_date, date_format
 from db_connect import conn
 
 
