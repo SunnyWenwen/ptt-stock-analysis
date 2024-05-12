@@ -16,6 +16,9 @@ def back_test_stock_code_and_date(stock_code_and_date_df, code_col_name, date_co
     # 用回測的方式去找出標的的報酬率
     profit_dict_list = []
     for itr, row in stock_code_and_date_df.iterrows():
+        # 每100筆資料印一次
+        if itr % 100 == 0:
+            print('已處理', itr, '筆資料')
         # row = see.loc[12]
         tmp_profit_dict = {}
         tmp_profit_dict[code_col_name] = row[code_col_name]
