@@ -24,5 +24,5 @@ call D:\software\python\virtualenvs\ptt_stock_analysis\Scripts\activate.bat
 D:
 echo %ymd% %time%----Run high_perf_auth_article.py >> %log_path%
 
-python .\high_perf_auth_article.py >> %python_log_path%\%ymd%.txt
+python -u .\high_perf_auth_article.py >> %python_log_path%\%ymd%.txt
 echo %ymd% %time%----Complete run Python  >> %log_path%

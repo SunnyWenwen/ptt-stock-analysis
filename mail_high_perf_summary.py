@@ -6,6 +6,7 @@ import pandas as pd
 
 from config import csv_path, mail_path, today_ymd, username, host, port, password
 
+print('Start get high_perf_auth_latest_article')
 # 讀取高績效作者最近的發文
 high_perf_auth_latest_article = pd.read_csv(csv_path + 'high_perf_auth_latest_article.csv')
 # 留下部分欄位就好
@@ -32,6 +33,9 @@ target_article_profit_df.sort_values(by=['author0', 'date_format'], inplace=True
 # 輸出成xlsx到mail_path
 target_article_profit_df.to_excel(mail_path + 'mail_attachment.xlsx', index=False)
 
+print('Complete get high_perf_auth_latest_article')
+
+print('Start send mail')
 # start send mail
 real_from_email = username
 
@@ -83,3 +87,4 @@ real_to_list = show_to_list
 
 server.sendmail(real_from_email, real_to_list, msg.as_string())
 server.close()
+print('Complete send mail')
