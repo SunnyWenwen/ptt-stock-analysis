@@ -3,7 +3,7 @@ import pandas as pd
 
 from config import csv_path, xlsx_path
 
-# target_article_profit.csv 資料來自於 backtest_all_target_article.py
+# target_article_profit.csv 資料來自於 D2_P1_backtest_all_target_article.py
 result = pd.read_csv(csv_path + 'target_article_profit.csv', encoding='UTF-8')
 # 留下有抓到資料的
 result = result[result['is_success_get_data'] == True].reset_index(drop=True)

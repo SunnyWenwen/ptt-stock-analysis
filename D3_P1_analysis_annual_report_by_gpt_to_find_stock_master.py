@@ -3,7 +3,7 @@ from db_connect import conn
 import pandas as pd
 import re
 
-from gpt_api import stock_experience_report_summarizer
+from D3_F1_gpt_api import stock_experience_report_summarizer
 
 # 塞選出心得文&年報
 if 'gpt_res' in pd.read_sql("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'gpt_res';", conn)[
