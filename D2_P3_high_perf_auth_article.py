@@ -4,6 +4,7 @@ import pandas as pd
 from config import csv_path, xlsx_path, pre_30_day
 from db_connect import conn
 
+print('Start get high_perf_auth_latest_article')
 # 讀取高表現作者
 high_perf_auth_df = pd.read_csv(csv_path + 'high_perf_auth.csv', encoding='UTF-8')
 
@@ -15,6 +16,7 @@ high_perf_auth_article = pd.read_sql("""SELECT * FROM info WHERE category = '標
 high_perf_auth_latest_article = high_perf_auth_article[
     high_perf_auth_article['date_format'] >= pre_30_day].reset_index(drop=True)
 
+print(f'lately article count: {len(high_perf_auth_latest_article)}')
 # 把他們績效串到後面
 high_perf_auth_latest_article = high_perf_auth_latest_article.merge(high_perf_auth_df, on='author0', how='left')
 
@@ -24,3 +26,4 @@ high_perf_auth_latest_article.sort_values(by=['date_format'], inplace=True, igno
 # 寫成xlsx and csv
 high_perf_auth_latest_article.to_excel(xlsx_path + 'high_perf_auth_latest_article.xlsx', index=False)
 high_perf_auth_latest_article.to_csv(csv_path + 'high_perf_auth_latest_article.csv', encoding='UTF-8', index=False)
+print('Complete get high_perf_auth_latest_article')
