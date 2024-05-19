@@ -22,7 +22,7 @@ echo %ymd% %time%----Start Activate Venv  >> %log_path%
 cd D:\project\ptt_stock_analysis 
 call D:\software\python\virtualenvs\ptt_stock_analysis\Scripts\activate.bat
 D:
-echo %ymd% %time%----Run high_perf_auth_article.py >> %log_path%
+echo %ymd% %time%----Run D2_P3_high_perf_auth_article.py >> %log_path%
 
-python -u .\high_perf_auth_article.py >> %python_log_path%\%ymd%.txt
+python -u .\D2_P3_high_perf_auth_article.py >> %python_log_path%\%ymd%.txt
 echo %ymd% %time%----Complete run Python  >> %log_path%

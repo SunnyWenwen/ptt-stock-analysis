@@ -11,17 +11,17 @@ print('Start get high_perf_auth_latest_article')
 high_perf_auth_latest_article = pd.read_csv(csv_path + 'high_perf_auth_latest_article.csv')
 # 留下部分欄位就好
 high_perf_auth_latest_article = high_perf_auth_latest_article[
-    ['author0', 'title', 'date_format', 'url', '30', '60', '120', '180', '360', 'article_CT']]
+    ['author0', 'title', 'date_format', 'url', '10', '30', '60', '120', '180', '360', 'article_CT']]
 
 # 部分欄位取到小數點後兩位
-high_perf_auth_latest_article[['30', '60', '120', '180', '360']] = high_perf_auth_latest_article[
-    ['30', '60', '120', '180', '360']].round(2)
+high_perf_auth_latest_article[['10', '30', '60', '120', '180', '360']] = high_perf_auth_latest_article[
+    ['10', '30', '60', '120', '180', '360']].round(2)
 
 # 欄位重新命名
 high_perf_auth_latest_article.rename(
-    columns={'author0': '作者', 'title': '標題', 'date_format': '發文日期', 'url': 'ptt網址',
-             '30': '30天績效', '60': '60天績效', '120': '120天績效', '180': '180天績效',
-             '360': '360天績效', 'article_CT': '發標的文次數'}, inplace=True)
+    columns={'author0': '作者', 'title': '標題', 'date_format': '發文日期', 'url': 'ptt網址', '10': '歷史10天績效',
+             '30': '歷史30天績效', '60': '歷史60天績效', '120': '歷史120天績效', '180': '歷史180天績效',
+             '360': '歷史360天績效', 'article_CT': '發標的文次數'}, inplace=True)
 
 # 讀取高績效作者之前的發文紀錄以及回測績效
 target_article_profit_df = pd.read_csv(csv_path + 'target_article_profit.csv')
@@ -79,12 +79,20 @@ with open(mail_path + 'mail_attachment.xlsx', 'rb') as file:
     part['Content-Disposition'] = 'attachment; filename="mail_attachment.xlsx"'
     msg.attach(part)
 
-# sent mail
-server = smtplib.SMTP_SSL(host, port)
-# server.starttls()
-server.login(username, password)
-real_to_list = show_to_list
+try:
+    # sent mail
+    server = smtplib.SMTP_SSL(host, port)
+    # server.starttls()
+    server.login(username, password)
+    real_to_list = show_to_list
 
-server.sendmail(real_from_email, real_to_list, msg.as_string())
-server.close()
-print('Complete send mail')
+    res = server.sendmail(real_from_email, real_to_list, msg.as_string())
+    if res:
+        print('Some emails failed to send:')
+        for recipient, (code, error) in res.items():
+            print(f'{recipient}: {code} {error}')
+    else:
+        print('All emails sent successfully')
+    server.close()
+except Exception as e:
+    print(f'Error sending mail: {e}')

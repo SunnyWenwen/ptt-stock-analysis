@@ -20,7 +20,7 @@ echo %ymd% %time%----Start Activate Venv  >> %log_path%
 cd D:\project\ptt_stock_analysis 
 call D:\software\python\virtualenvs\ptt_stock_analysis\Scripts\activate.bat
 D:
-echo %ymd% %time%----Run mail_high_perf_summary.py >> %log_path%
+echo %ymd% %time%----Run D2_P4_mail_high_perf_summary.py >> %log_path%
 
-python -u .\mail_high_perf_summary.py | tee -a %python_log_path%\%ymd%.txt
+python -u .\D2_P4_mail_high_perf_summary.py | tee -a %python_log_path%\%ymd%.txt
 echo %ymd% %time%----Complete run Python  >> %log_path%
