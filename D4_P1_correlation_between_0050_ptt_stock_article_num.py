@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     # 抓取資料
     # 計算每日文章數，需有跑過download_data.py，才會有ppt資料
-    df_ptt = pd.read_sql("select category,date_format date from info", conn)
+    df_ptt = pd.read_sql("select category,date_format date from ppt_article_details", conn)
     df_ptt['date'] = pd.to_datetime(df_ptt['date'])
     df_ptt['date'] = df_ptt['date'].dt.date
     df_ptt_ct = pd.DataFrame(collections.Counter(df_ptt['date']), index=['count']).T.reset_index()

@@ -6,7 +6,7 @@ from config import csv_path, xlsx_path
 from db_connect import conn
 from utils import get_stock_code_from_title, back_test_stock_code_and_date
 
-ori_df = pd.read_sql("SELECT * FROM info WHERE category = '標的'", conn)
+ori_df = pd.read_sql("SELECT * FROM ppt_article_details WHERE category = '標的'", conn)
 
 df = ori_df.copy()
 # 抓出標的代碼

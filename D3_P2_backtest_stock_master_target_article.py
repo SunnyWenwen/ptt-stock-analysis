@@ -21,7 +21,7 @@ from
     GROUP BY 
       author0) A
 inner join
-    info B
+    ppt_article_details B
 on
     A.author0 = B.author0 and
     B.category = '標的' and

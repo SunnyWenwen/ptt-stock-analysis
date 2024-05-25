@@ -9,7 +9,7 @@ print('Start get high_perf_auth_latest_article')
 high_perf_auth_df = pd.read_csv(csv_path + 'high_perf_auth.csv', encoding='UTF-8')
 
 # 看高表現作者最近有沒有發標的文
-high_perf_auth_article = pd.read_sql("""SELECT * FROM info WHERE category = '標的' and author0 in ('{}')""".format(
+high_perf_auth_article = pd.read_sql("""SELECT * FROM ppt_article_details WHERE category = '標的' and author0 in ('{}')""".format(
     "','".join(high_perf_auth_df['author0'])), conn)
 
 # 進30天的文章

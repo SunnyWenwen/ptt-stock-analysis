@@ -9,9 +9,9 @@ from D3_F1_gpt_api import stock_experience_report_summarizer
 if 'gpt_res' in pd.read_sql("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'gpt_res';", conn)[
     'name'].values:
     # 若已經有gpt_res此table代表可能某些資料可能已經丟到GPT算過了，為了避免重複計算，需用AID做塞選
-    target_data = pd.read_sql("select * from info where AID not in (select AID from gpt_res)", conn)
+    target_data = pd.read_sql("select * from ppt_article_details where AID not in (select AID from gpt_res)", conn)
 else:
-    target_data = pd.read_sql("select * from info", conn)
+    target_data = pd.read_sql("select * from ppt_article_details", conn)
 
 target_data = target_data[target_data['category'] == '心得']
 target_data = target_data[target_data['title'].apply(lambda x: bool(re.search(r'年報', x)))]

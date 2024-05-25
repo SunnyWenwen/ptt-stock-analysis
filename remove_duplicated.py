@@ -49,6 +49,6 @@ def remove_duplicated(table, unique_col_name):
 
 
 remove_duplicated('stock_god_info', 'AID')
-remove_duplicated('header', 'AID')
-remove_duplicated('info', 'AID')
+remove_duplicated('ppt_article_ids', 'AID')
+remove_duplicated('ppt_article_details', 'AID')
 remove_duplicated('gpt_res', 'AID')
