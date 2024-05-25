@@ -19,12 +19,12 @@ if __name__ == '__main__':
     print('測試是否可以使用tw-stock-analysis模組')
     stock = MyStock('2330')
 
-    # 用一年前日期回測
+    # 用一年前日期計算報酬率
     now = datetime.datetime.now()
     now -= datetime.timedelta(days=365)
     stock.back_test(now)
 
-    # 用指定日期回測
+    # 用指定日期計算報酬率
     stock.back_test(datetime.datetime(2023, 3, 5))
 
     print('測試完成')

@@ -11,11 +11,11 @@ def check_duplicated(table, unique_col_name):  # table = 'stock_god_info';unique
     ct = collections.Counter(target_data[unique_col_name])
     ct_ct = collections.Counter(ct.values())
     if len(ct_ct) <= 1:
-        print(f'{table}資料無重複')
+        print(f'{table}data no duplicated')
         print(f"    {str(ct_ct)}")
         return False
     else:
-        print(f'{table}資料重複')
+        print(f'{table}data duplicated')
         print(f"    {str(ct_ct)}")
         return True
 
@@ -23,7 +23,7 @@ def check_duplicated(table, unique_col_name):  # table = 'stock_god_info';unique
 def remove_duplicated(table, unique_col_name):
     # remove duplicated
     if check_duplicated(table, unique_col_name):
-        print(f'以{unique_col_name}去除{table}的重複')
+        print(f'use {unique_col_name} remove {table} duplicated data')
         sql = f'''
         DELETE FROM {table}
         WHERE rowid NOT IN (
@@ -38,14 +38,14 @@ def remove_duplicated(table, unique_col_name):
             # 提交事務
             conn.commit()
 
-            print("重複記錄刪除成功。")
+            print("remove duplicated data successfully")
         except Exception as e:
             # 如果出錯了，打印錯誤信息
-            print("錯誤發生：", e)
-        print('去除後結果')
+            print("error", e)
+        print('result after remove duplicated data')
         check_duplicated(table, unique_col_name)
     else:
-        print('不須去除重複')
+        print('dont need to remove duplicated data')
 
 
 remove_duplicated('stock_god_info', 'AID')

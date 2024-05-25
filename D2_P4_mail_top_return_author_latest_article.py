@@ -6,9 +6,9 @@ import pandas as pd
 
 from config import csv_path, mail_path, today_ymd, username, host, port, password
 
-print('Start get high_perf_auth_latest_article')
+print('Start get top_return_author_latest_article')
 # 讀取高績效作者最近的發文
-high_perf_auth_latest_article = pd.read_csv(csv_path + 'high_perf_auth_latest_article.csv')
+high_perf_auth_latest_article = pd.read_csv(csv_path + 'top_return_author_latest_article.csv')
 # 留下部分欄位就好
 high_perf_auth_latest_article = high_perf_auth_latest_article[
     ['author0', 'title', 'date_format', 'url', '10', '30', '60', '120', '180', '360', 'article_CT']]
@@ -23,18 +23,18 @@ high_perf_auth_latest_article.rename(
              '30': '歷史30天績效', '60': '歷史60天績效', '120': '歷史120天績效', '180': '歷史180天績效',
              '360': '歷史360天績效', 'article_CT': '發標的文次數'}, inplace=True)
 
-# 讀取高績效作者之前的發文紀錄以及回測績效
-target_article_profit_df = pd.read_csv(csv_path + 'target_article_profit.csv')
+# 讀取高績效作者之前的發文紀錄以及績效
+all_target_article_return_df = pd.read_csv(csv_path + 'all_target_article_return.csv')
 
 # 留下那些高績效作者就好
-target_article_profit_df = target_article_profit_df[
-    target_article_profit_df['author0'].isin(high_perf_auth_latest_article['作者'])]
-target_article_profit_df.sort_values(by=['author0', 'date_format'], inplace=True, ignore_index=True, ascending=False)
+all_target_article_return_df = all_target_article_return_df[
+    all_target_article_return_df['author0'].isin(high_perf_auth_latest_article['作者'])]
+all_target_article_return_df.sort_values(by=['author0', 'date_format'], inplace=True, ignore_index=True,
+                                         ascending=False)
 # 輸出成xlsx到mail_path
-target_article_profit_df.to_excel(mail_path + 'mail_attachment.xlsx', index=False)
+all_target_article_return_df.to_excel(mail_path + 'mail_attachment.xlsx', index=False)
 
-print('Complete get high_perf_auth_latest_article')
-
+print('Complete get top_return_author_latest_article')
 print('Start send mail')
 # start send mail
 real_from_email = username

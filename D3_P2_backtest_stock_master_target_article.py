@@ -4,7 +4,7 @@ import pandas as pd
 from config import csv_path
 from db_connect import conn
 from import_tw_stock_analysis import MyStock
-from utils import get_stock_code_from_title, back_test_stock_code_and_date
+from utils import get_stock_code_from_title, get_stock_code_and_date_return
 
 # 用股票高手的ID去找出他的[標的]文章
 # 因為股票高手可能有多篇年報心得文，為避免資料重複，先以ID為group，把AID的資訊串在一起
@@ -36,8 +36,8 @@ stock_master['target_code'] = stock_master['target_title'].apply(get_stock_code_
 # 去掉部分標的代碼為空的資料
 stock_master = stock_master[stock_master['target_code'].notnull()]
 
-# 用回測的方式去找出標的的報酬率
-profit_df = back_test_stock_code_and_date(stock_master[['target_code', 'target_date']])
-result = stock_master.merge(profit_df, on=['target_code', 'target_date'], how='left')
+# 找出標的文標的報酬率
+return_df = get_stock_code_and_date_return(stock_master[['target_code', 'target_date']])
+result = stock_master.merge(return_df, on=['target_code', 'target_date'], how='left')
 
 result.to_csv(csv_path + 'target.csv', encoding='BIG5')

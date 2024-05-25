@@ -16,12 +16,12 @@ def get_ptt_article_list(ptt_url, page=''):
         soup = bs4.BeautifulSoup(response.text, "html.parser")
 
         titles = soup.find_all('div', 'title')
-        title_dict = [{'page': page, 'AID': tag.contents[1].attrs['href'], 'title': tag.text.strip()} for tag in titles
-                      if '刪除' not in tag.text]
-        print(f"抓取文章列表'{url}'成功，共有{len(title_dict)}篇文章的ids")
-        return title_dict
+        tmp_title_dict = [{'page': page, 'AID': tag.contents[1].attrs['href'], 'title': tag.text.strip()} for tag in
+                          titles if '刪除' not in tag.text]
+        print(f"Get article list '{url}' success，get total {len(tmp_title_dict)} articles ids")
+        return tmp_title_dict
     else:
-        print(f"抓取文章列表'{url}'失敗")
+        print(f"Get article list '{url}' fail")
 
 
 def get_ptt_article_detail(page, article_AID):  # article_AID = '/bbs/Stock/M.1709714209.A.657.html'
@@ -30,7 +30,7 @@ def get_ptt_article_detail(page, article_AID):  # article_AID = '/bbs/Stock/M.17
     response = requests.get(article_url, headers=my_headers)
     try:
         if response.ok:
-            print(f"抓取page:{page} 文章'{article_url}'成功，開始進行處理。")
+            print(f"Get page:{page} article from '{article_url}'success. Start data process...")
             res = dict()
             res['AID'] = article_AID
             soup = bs4.BeautifulSoup(response.text, "html.parser")
@@ -59,16 +59,16 @@ def get_ptt_article_detail(page, article_AID):  # article_AID = '/bbs/Stock/M.17
             contents = texts[2:]
             # 內容
             res['content'] = '\n'.join(contents)
-            print(f"處理page:{page} 文章'{article_url}'成功")
+            print(f"Process page:{page} 文章'{article_url}'success.")
             return res
         else:
-            print(f"抓取文章'{article_url}'失敗")
+            print(f"Get page:{page} article from '{article_url}'fail")
             # 紀錄該AID抓取失敗，避免下次重複處理
             fail_df = pd.DataFrame(
                 [{'page': page, 'AID': article_AID, 'upload_date': upload_date, 'error': '抓取文章失敗'}])
             fail_df.to_sql('ppt_article_fail_download_aid', conn, if_exists='append', index=False)
     except BaseException:
-        print(f"處理page:{page} 文章'{article_url}'進行處理時發生未預期錯誤")
+        print(f"Process page:{page} 文章'{article_url}' occur unexpected error.")
         # 紀錄該AID抓取失敗，避免下次重複處理
         fail_df = pd.DataFrame(
             [{'page': page, 'AID': article_AID, 'upload_date': upload_date, 'error': '處理文章時發生未預期錯誤'}])
@@ -90,7 +90,7 @@ def get_ptt_newest_page_index(ptt_url):
 
 if __name__ == '__main__':
 
-    print('Start downloaded page')
+    print('Start downloaded page list and ids')
     # check newest page
     newest_page = int(get_ptt_newest_page_index(ptt_url=f"https://www.ptt.cc/bbs/Stock/index.html"))
     max_n_page = 300
@@ -108,11 +108,11 @@ if __name__ == '__main__':
 
     ## download ids
     title_df_list = []
-    print(f'    last_downloaded_page:{last_downloaded_page}')
+    print(f'    Last_downloaded_page:{last_downloaded_page}')
     start_download_page = max(last_downloaded_page, newest_page - max_n_page)
     # start_download_page = newest_page - n_page
-    print(f'    start_download_page:{start_download_page}')
-    print(f'    newest_page:{newest_page}')
+    print(f'    Start_download_page:{start_download_page}')
+    print(f'    Newest_page:{newest_page}')
     for tmp_page in range(start_download_page, newest_page + 1):
         title_dict = get_ptt_article_list(ptt_url=f"https://www.ptt.cc/bbs/Stock/index", page=str(tmp_page))
         title_df = pd.DataFrame(title_dict)
@@ -126,9 +126,9 @@ if __name__ == '__main__':
     all_title_df.to_sql('ppt_article_ids', conn, if_exists='append', index=False)
     # all_title_df.to_sql('ppt_article_ids', conn, if_exists='replace', index=False)
     conn.commit()
-    print('End downloaded page')
+    print('End downloaded page list and ids')
 
-    print('Start downloaded text by ppt_article_ids')
+    print('Start download article detail by ppt_article_ids')
     ## download text by ppt_article_ids
     # ppt_article_ids from db
     get_ids_sql = "select * from ppt_article_ids where 0=0"
@@ -149,12 +149,12 @@ if __name__ == '__main__':
 
     # page+AID的tuple
     AID_tuple_list = all_title_df.apply(lambda x: (x['page'], x['AID']), axis=1).tolist()
-    print(f' 共有{len(AID_tuple_list)}篇文章要下載')
+    print(f' Total have {len(AID_tuple_list)}   AID to download.')
     detail_df_list = []
     for i in range(len(AID_tuple_list)):
         AID_tuple = AID_tuple_list[i]
         if i % 100 == 0:
-            print(f'已處理{i}個AID')
+            print(f'Already processed {i}/{len(AID_tuple_list)} articles.')
         detail_df_list.append(get_ptt_article_detail(page=AID_tuple[0], article_AID=AID_tuple[1]))
         if (i % 2000 == 0) or (i == len(AID_tuple_list) - 1):
             # 每兩千儲存一次文章
@@ -190,12 +190,12 @@ if __name__ == '__main__':
                 # upload date
                 all_detail_df['upload_date'] = upload_date
 
-                print(f' 存入ppt_article_details {len(all_detail_df)}篇文章')
+                print(f'Save {len(all_detail_df)} articles to ppt_article_details table.')
                 all_detail_df.to_sql('ppt_article_details', conn, if_exists='append', index=False)
                 # all_detail_df.to_sql('ppt_article_details', conn, if_exists='replace', index=False)
                 conn.commit()
             else:
-                print('一篇文章都沒有。')
+                print('There is no article.')
             # 清空
             detail_df_list = []
 

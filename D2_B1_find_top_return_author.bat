@@ -1,7 +1,7 @@
 set my_path=C:\Users\User\iCloudDrive\share_data\log
-set log_path=%my_path%\get_high_perf_auth_article_log.txt
+set log_path=%my_path%\find_top_return_author_log.txt
 set ymd=%date:~0,4%%date:~5,2%%date:~8,2%
-set python_log_path=%my_path%\get_high_perf_auth_article_log
+set python_log_path=%my_path%\find_top_return_author_python_daily_log
 
 if not exist "%my_path%" (
 	mkdir "%my_path%"
@@ -22,7 +22,9 @@ echo %ymd% %time%----Start Activate Venv  >> %log_path%
 cd D:\project\ptt_stock_analysis 
 call D:\software\python\virtualenvs\ptt_stock_analysis\Scripts\activate.bat
 D:
-echo %ymd% %time%----Run D2_P3_high_perf_auth_article.py >> %log_path%
+echo %ymd% %time%----Run D2_P1_summary_target_article_return.py >> %log_path%
+python -u .\D2_P1_summary_target_article_return.py | tee -a %python_log_path%\%ymd%.txt
+echo %ymd% %time%----Run D2_P2_find_top_return_author.py >> %log_path%
+python -u .\D2_P2_find_top_return_author.py | tee -a %python_log_path%\%ymd%.txt
 
-python -u .\D2_P3_high_perf_auth_article.py | tee -a %python_log_path%\%ymd%.txt
 echo %ymd% %time%----Complete run Python  >> %log_path%
