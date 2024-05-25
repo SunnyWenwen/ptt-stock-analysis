@@ -17,7 +17,10 @@ high_perf_auth_article = pd.read_sql(
 top_return_author_latest_article = high_perf_auth_article[
     high_perf_auth_article['date_format'] >= pre_30_day].reset_index(drop=True)
 
+# 留下指定欄位
+top_return_author_latest_article = top_return_author_latest_article[['author0', 'title', 'date_format', 'url']]
 print(f'lately article count: {len(top_return_author_latest_article)}')
+
 # 把他們績效串到後面
 top_return_author_latest_article = top_return_author_latest_article.merge(top_return_author_df, on='author0',
                                                                           how='left')

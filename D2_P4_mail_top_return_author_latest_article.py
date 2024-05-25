@@ -4,24 +4,25 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import pandas as pd
 
-from config import csv_path, mail_path, today_ymd, username, host, port, password
+from config import csv_path, mail_path, today_ymd, username, host, port, password, return_days_show_str_list, \
+    mail_return_days_map
 
 print('Start get top_return_author_latest_article')
 # 讀取高績效作者最近的發文
 high_perf_auth_latest_article = pd.read_csv(csv_path + 'top_return_author_latest_article.csv')
 # 留下部分欄位就好
 high_perf_auth_latest_article = high_perf_auth_latest_article[
-    ['author0', 'title', 'date_format', 'url', '10', '30', '60', '120', '180', '360', 'article_CT']]
+    ['author0', 'title', 'date_format', 'url', 'article_CT'] + return_days_show_str_list]
 
 # 部分欄位取到小數點後兩位
-high_perf_auth_latest_article[['10', '30', '60', '120', '180', '360']] = high_perf_auth_latest_article[
-    ['10', '30', '60', '120', '180', '360']].round(2)
+high_perf_auth_latest_article[return_days_show_str_list] = high_perf_auth_latest_article[
+    return_days_show_str_list].round(2)
 
 # 欄位重新命名
-high_perf_auth_latest_article.rename(
-    columns={'author0': '作者', 'title': '標題', 'date_format': '發文日期', 'url': 'ptt網址', '10': '歷史10天績效',
-             '30': '歷史30天績效', '60': '歷史60天績效', '120': '歷史120天績效', '180': '歷史180天績效',
-             '360': '歷史360天績效', 'article_CT': '發標的文次數'}, inplace=True)
+rename_dict = {'author0': '作者', 'title': '標題', 'date_format': '發文日期', 'url': 'ptt網址',
+               'article_CT': '發標的文次數'}
+rename_dict.update(mail_return_days_map)
+high_perf_auth_latest_article.rename(columns=rename_dict, inplace=True)
 
 # 讀取高績效作者之前的發文紀錄以及績效
 all_target_article_return_df = pd.read_csv(csv_path + 'all_target_article_return.csv')
@@ -29,7 +30,7 @@ all_target_article_return_df = pd.read_csv(csv_path + 'all_target_article_return
 # 留下那些高績效作者就好
 all_target_article_return_df = all_target_article_return_df[
     all_target_article_return_df['author0'].isin(high_perf_auth_latest_article['作者'])]
-all_target_article_return_df.sort_values(by=['author0', 'date_format'], inplace=True, ignore_index=True,
+all_target_article_return_df.sort_values(by=['author0', 'post_date'], inplace=True, ignore_index=True,
                                          ascending=False)
 # 輸出成xlsx到mail_path
 all_target_article_return_df.to_excel(mail_path + 'mail_attachment.xlsx', index=False)
