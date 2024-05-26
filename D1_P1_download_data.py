@@ -28,6 +28,30 @@ def get_ptt_article_list(ptt_url, page=''):
         print(f"Get article list '{url}' fail")
 
 
+async def ptt_article_fetch(ptt_url, page='', silent=False):
+    url = f"{ptt_url}{page}.html"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers={'cookie': 'over18=1;'}) as response:
+            if response.status == 200:  # 只处理成功的响应
+                text = await response.text()  # 假设响应内容是 text
+                soup = bs4.BeautifulSoup(text, "html.parser")
+                titles = soup.find_all('div', 'title')
+                # 有些文張標題格式會跑掉,所以contents內有要有兩個以上的元素才抓
+                tmp_title_dict = [{'AID': tag.contents[1].attrs['href'], 'title': tag.text.strip()} for tag in
+                                  titles if '刪除' not in tag.text and len(tag.contents) > 1]
+                if not silent:
+                    print(f"    Get article list '{url}' success，get total {len(tmp_title_dict)} articles ids")
+                return tmp_title_dict
+            else:
+                print(f"    Get article list '{url}' fail")
+
+
+async def get_batch_ptt_article_list(ptt_url, page_list, silent=False):
+    tasks = [asyncio.create_task(ptt_article_fetch(ptt_url, page, silent)) for page in page_list]
+    responses = await asyncio.gather(*tasks)
+    return responses
+
+
 def get_ptt_article_detail(article_AID):  # article_AID = '/bbs/Stock/M.1582026074.A.570.html'
     """
     舊的運行方式，處理單一article_AID用
@@ -91,7 +115,7 @@ def process_response(response):
             res['title'] = header[2].text
             # 日期
             res['date'] = header[3].text
-            # 日期要符合其格式，否則算失敗
+            # 日期要符合其格式，否則算失敗(https://www.ptt.cc/bbs/Stock/M.1582026074.A.570.html)
             pd.to_datetime(res['date'], format='%a %b %d %H:%M:%S %Y')
 
             ## 查找所有html 元素 抓出內容
@@ -128,8 +152,11 @@ if __name__ == '__main__':
     print('Start downloaded latest aids')
     # check newest page
     newest_page = int(get_ptt_newest_page_index(ptt_url=f"https://www.ptt.cc/bbs/Stock/index.html"))
-    max_n_page = 5000
-    stop_when_have_downloaded = False
+
+    # 若第一次下載，需要調整以下參數，看要抓多少頁資料。
+    max_n_page = 500
+    # 若想回補資料，則要把遇到以下載過的資料就停止的參數設為False
+    stop_when_have_downloaded = True
 
     ## check header have downloaded
 
@@ -141,29 +168,52 @@ if __name__ == '__main__':
         downloaded_AID_set = {}
 
     ## download ids
-    title_df_list = []
     print(f'    Newest_page:{newest_page}')
-    # 一頁一頁往回找，直到找到已經下載過的AID為止
-    for tmp_page in range(newest_page, newest_page - max_n_page, -1):  # tmp_page = newest_page
-        print(f'    Page:{tmp_page}')
-        # 抓出該頁所有標題
-        title_dict = get_ptt_article_list(ptt_url=f"https://www.ptt.cc/bbs/Stock/index", page=str(tmp_page))
-        # 留下沒抓過的，轉成df格式
-        title_df = pd.DataFrame(title_dict for title_dict in title_dict if title_dict['AID'] not in downloaded_AID_set)
+
+    page_list_batch_size = 50
+
+    # 一批一批的往回找，直到找到已經下載過的AID為止
+    for tmp_page in range(newest_page, newest_page - max_n_page, -page_list_batch_size):  # tmp_page = newest_page
+        end_tmp_page = max(tmp_page - page_list_batch_size, 0)
+        tmp_page_list = [str(x) for x in range(tmp_page, end_tmp_page, -1)]
+        print(f'Start processed {tmp_page}~{end_tmp_page} pages.')
+        responses = asyncio.run(
+            get_batch_ptt_article_list(ptt_url=f"https://www.ptt.cc/bbs/Stock/index", page_list=tmp_page_list,
+                                       silent=True))
+        title_df = pd.DataFrame(title_dict for response in responses for title_dict in response if
+                                title_dict['AID'] not in downloaded_AID_set)
         if not title_df.empty:
             title_df['upload_date'] = upload_date
             # 塞到db
             title_df.to_sql('ppt_article_ids', conn, if_exists='append', index=False)
             conn.commit()
+            print(f'    Save {len(title_df)} articles to ppt_article_ids table.')
         else:
-            print(f'    Page:{tmp_page} have no new article.')
+            print(f'    {tmp_page}~{end_tmp_page} have no new article.')
 
-        # 若存在已經抓過的AID則停止
-        if sum(1 for title_dict in title_dict if
+        if sum(1 for response in responses for title_dict in response if
                title_dict['AID'] in downloaded_AID_set) > 0 and stop_when_have_downloaded:
-            print(f'    Page:{tmp_page} have downloaded article. Stop download.')
+            print(f'    {tmp_page}~{end_tmp_page} pages have downloaded article. Stop download.')
             break
-    print('End downloaded latest aids')
+
+    #     # 抓出該頁所有標題
+    #     title_dict = get_ptt_article_list(ptt_url=f"https://www.ptt.cc/bbs/Stock/index", page=str(tmp_page))
+    #     # 留下沒抓過的，轉成df格式
+    #     title_df = pd.DataFrame(title_dict for title_dict in title_dict if title_dict['AID'] not in downloaded_AID_set)
+    #     if not title_df.empty:
+    #         title_df['upload_date'] = upload_date
+    #         # 塞到db
+    #         title_df.to_sql('ppt_article_ids', conn, if_exists='append', index=False)
+    #         conn.commit()
+    #     else:
+    #         print(f'    Page:{tmp_page} have no new article.')
+    #
+    #     # 若存在已經抓過的AID則停止
+    #     if sum(1 for title_dict in title_dict if
+    #            title_dict['AID'] in downloaded_AID_set) > 0 and stop_when_have_downloaded:
+    #         print(f'    Page:{tmp_page} have downloaded article. Stop download.')
+    #         break
+    # print('End downloaded latest aids')
 
     print('Start download article detail by ppt_article_ids')
     ## download text by ppt_article_ids
@@ -186,12 +236,12 @@ if __name__ == '__main__':
 
     # AID的list
     AID_list = all_title_df['AID'].tolist()
-    print(f' Total have {len(AID_list)}  AID to download.')
+    print(f'Total have {len(AID_list)}  AID to download.')
 
-    batch_size = 500
+    AID_list_batch_size = 500
 
-    for i in range(0, len(AID_list), batch_size):  # i=0
-        end_i = min(i + batch_size, len(AID_list))
+    for i in range(0, len(AID_list), AID_list_batch_size):  # i=0
+        end_i = min(i + AID_list_batch_size, len(AID_list))
 
         print(f'Start processed {i}~{end_i}/{len(AID_list)} articles.')
         tmp_AID_list = AID_list[i:end_i]
@@ -231,8 +281,8 @@ if __name__ == '__main__':
             # all_detail_df.to_sql('ppt_article_details', conn, if_exists='replace', index=False)
             conn.commit()
         else:
-            print('There is no article.')
+            print('    There is no article.')
 
-        print(f'End processed {i}~{end_i}/{len(AID_list)} articles.')
+        print(f'    End processed {i}~{end_i}/{len(AID_list)} articles.')
 
-    print('End downloaded text by ppt_article_ids')
+    print('    End downloaded text by ppt_article_ids')
