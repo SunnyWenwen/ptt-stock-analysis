@@ -50,17 +50,19 @@ real_from_email = username
 # df.to_csv(csv_file, index=False)
 
 # context
-subject = f'[{today_ymd}]PTT high-performing authors latest investment thesis.'
-show_to_list = ['p147896325p@gmail.com', 'ww61220@gmail.com']
+subject = f'[{today_ymd}]PTT high-performing authors latest target article.'
+mail_list = pd.read_csv('mail_list.csv')
+show_to_list = mail_list['mail_list'].tolist()
 show_from = username
 
 msg = MIMEMultipart()
 msg['Subject'] = subject
 msg['From'] = show_from
-msg['To'] = ";".join(show_to_list)
+msg['To'] = username
+# msg['Bcc'] = ";".join(show_to_list)
 
 # plain text 1
-plain_text_part = MIMEText("Within 30 days, the investment thesis of high-performing authors.\n", 'plain')
+plain_text_part = MIMEText("Within 30 days, the target article of high-performing authors.\n", 'plain')
 msg.attach(plain_text_part)  # 郵件純文字內容
 
 # dataframe
@@ -69,10 +71,25 @@ html_part = MIMEText(html_table, 'html')
 msg.attach(html_part)
 
 # plain text 2
-plain_text_part = MIMEText("\nFor historical investment thesis by each author, please refer to the attachment.\n",
+plain_text_part = MIMEText("\nFor historical target article by each author, please refer to the attachment.\n",
                            'plain')
 msg.attach(plain_text_part)
 
+# plain text 3
+plain_text_part = MIMEText(
+    """
+    <html>
+        <body>
+            <p> 
+        More information about target article return and author return summary can 
+        click <a href="https://docs.google.com/spreadsheets/d/1vNf7zi-a1KM_c2CsLQL_HmO6rdsfwmPHnjVC-pAEP6k/edit?usp=sharing">link</a> 
+            </p>
+        </body>
+    </html>""",
+    'html')
+
+msg.attach(plain_text_part)
+# gid=2018541462
 # attach file
 # 添加 CSV 文件作为附件
 with open(mail_path + 'mail_attachment.xlsx', 'rb') as file:
