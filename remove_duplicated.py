@@ -5,17 +5,19 @@ import collections
 cur = conn.cursor()
 
 
-def check_duplicated(table, unique_col_name):  # table = 'stock_god_info';unique_col_name = 'AID'
+def check_duplicated(table, unique_col_name):  # table = 'ppt_article_ids';unique_col_name = 'AID'
     # check duplicated
     target_data = pd.read_sql(f"select {unique_col_name} from {table}", conn)
     ct = collections.Counter(target_data[unique_col_name])
+    # see = {k:v for k, v in ct.items() if v>1}
+
     ct_ct = collections.Counter(ct.values())
     if len(ct_ct) <= 1:
-        print(f'{table}data no duplicated')
+        print(f'{table} data no duplicated')
         print(f"    {str(ct_ct)}")
         return False
     else:
-        print(f'{table}data duplicated')
+        print(f'{table} data duplicated')
         print(f"    {str(ct_ct)}")
         return True
 
@@ -47,6 +49,9 @@ def remove_duplicated(table, unique_col_name):
     else:
         print('dont need to remove duplicated data')
 
+
+check_duplicated('ppt_article_details', 'AID')
+check_duplicated('ppt_article_ids', 'AID')
 
 remove_duplicated('stock_god_info', 'AID')
 remove_duplicated('ppt_article_ids', 'AID')
