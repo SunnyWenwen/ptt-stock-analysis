@@ -20,7 +20,7 @@ def get_ptt_article_list(ptt_url, page=''):
 
         titles = soup.find_all('div', 'title')
         # 有些文張標題格式會跑掉,所以contents內有要有兩個以上的元素才抓
-        tmp_title_dict = [{'page': page, 'AID': tag.contents[1].attrs['href'], 'title': tag.text.strip()} for tag in
+        tmp_title_dict = [{'AID': tag.contents[1].attrs['href'], 'title': tag.text.strip()} for tag in
                           titles if '刪除' not in tag.text and len(tag.contents) > 1]
         print(f"Get article list '{url}' success，get total {len(tmp_title_dict)} articles ids")
         return tmp_title_dict
@@ -28,12 +28,11 @@ def get_ptt_article_list(ptt_url, page=''):
         print(f"Get article list '{url}' fail")
 
 
-def get_ptt_article_detail(page, article_AID):  # article_AID = '/bbs/Stock/M.1582026074.A.570.html'
+def get_ptt_article_detail(article_AID):  # article_AID = '/bbs/Stock/M.1582026074.A.570.html'
     """
     舊的運行方式，處理單一article_AID用
     現在已改為使用async批量處理，不再使用此function
     留著用來debug&測試
-    :param page:
     :param article_AID:
     :return:
     """
@@ -41,7 +40,7 @@ def get_ptt_article_detail(page, article_AID):  # article_AID = '/bbs/Stock/M.15
     my_headers = {'cookie': 'over18=1;'}
     response = requests.get(article_url, headers=my_headers)
     text = response.text if response.ok else False
-    tmp_response = {'page': page, 'article_AID': article_AID, 'article_url': article_url, 'text': text}
+    tmp_response = {'article_AID': article_AID, 'article_url': article_url, 'text': text}
     return process_response(tmp_response)
 
 
@@ -58,19 +57,19 @@ def get_ptt_newest_page_index(ptt_url):
     return str(int(match.group(1)) + 1)
 
 
-async def fetch(page, article_AID):
+async def fetch(article_AID):
     article_url = f"https://www.ptt.cc" + article_AID
     async with aiohttp.ClientSession() as session:
         async with session.get(article_url, headers={'cookie': 'over18=1;'}) as response:
             if response.status == 200:  # 只处理成功的响应
                 text = await response.text()  # 假设响应内容是 text
-                return {'page': page, 'article_AID': article_AID, 'article_url': article_url, 'text': text}
+                return {'article_AID': article_AID, 'article_url': article_url, 'text': text}
             else:
-                return {'page': page, 'article_AID': article_AID, 'article_url': article_url, 'text': False}
+                return {'article_AID': article_AID, 'article_url': article_url, 'text': False}
 
 
-async def get_batch_response(tmp_AID_tuple_list):
-    tasks = [asyncio.create_task(fetch(page, article_AID)) for page, article_AID in tmp_AID_tuple_list]
+async def get_batch_response(tmp_AID_list):
+    tasks = [asyncio.create_task(fetch(article_AID)) for article_AID in tmp_AID_list]
     responses = await asyncio.gather(*tasks)
     return responses
 
@@ -108,64 +107,63 @@ def process_response(response):
             contents = texts[2:]
             # 內容
             res['content'] = '\n'.join(contents)
-            print(f"Process page:{response['page']} 文章'{response['article_url']}'success.")
+            print(f"Process article '{response['article_url']}'success.")
             return res
         else:
             fail_df = pd.DataFrame(
-                [{'page': response['page'], 'AID': response['article_AID'], 'upload_date': upload_date,
+                [{'AID': response['article_AID'], 'upload_date': upload_date,
                   'error': '抓取文章失敗'}])
-            print(f"Get page:{response['page']} article from '{response['article_url']}'fail")
+            print(f"Get article from '{response['article_url']}'fail")
             fail_df.to_sql('ppt_article_fail_download_aid', conn, if_exists='append', index=False)
     except BaseException:
-        print(f"Process page:{response['page']} 文章'{response['article_url']}' occur unexpected error.")
+        print(f"Process article '{response['article_url']}' occur unexpected error.")
         # 紀錄該AID抓取失敗，避免下次重複處理
         fail_df = pd.DataFrame(
-            [{'page': response['page'], 'AID': response['article_AID'], 'upload_date': upload_date,
-              'error': '處理文章時發生未預期錯誤'}])
+            [{'AID': response['article_AID'], 'upload_date': upload_date, 'error': '處理文章時發生未預期錯誤'}])
         fail_df.to_sql('ppt_article_fail_download_aid', conn, if_exists='append', index=False)
 
 
 if __name__ == '__main__':
 
-    print('Start downloaded page list and ids')
+    print('Start downloaded latest aids')
     # check newest page
     newest_page = int(get_ptt_newest_page_index(ptt_url=f"https://www.ptt.cc/bbs/Stock/index.html"))
-    max_n_page = 300
+    max_n_page = 5000
+    stop_when_have_downloaded = False
 
     ## check header have downloaded
 
     if 'ppt_article_ids' in \
             pd.read_sql("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'ppt_article_ids';", conn)[
                 'name'].values:
-        last_downloaded_page = int(
-            pd.read_sql("select MAX(CAST(page AS INTEGER)) max_page from ppt_article_ids", conn)['max_page'][0])
-        # oldest_downloaded_page = int(pd.read_sql("select min(page) min_page from ppt_article_ids", conn)['min_page'][0])
         downloaded_AID_set = set(pd.read_sql("select AID from ppt_article_ids", conn)['AID'])
     else:
-        last_downloaded_page = 0
         downloaded_AID_set = {}
 
     ## download ids
     title_df_list = []
-    print(f'    Last_downloaded_page:{last_downloaded_page}')
-    start_download_page = max(last_downloaded_page, newest_page - max_n_page)
-    # start_download_page = newest_page - n_page
-    print(f'    Start_download_page:{start_download_page}')
     print(f'    Newest_page:{newest_page}')
-    for tmp_page in range(start_download_page, newest_page + 1):
+    # 一頁一頁往回找，直到找到已經下載過的AID為止
+    for tmp_page in range(newest_page, newest_page - max_n_page, -1):  # tmp_page = newest_page
+        print(f'    Page:{tmp_page}')
+        # 抓出該頁所有標題
         title_dict = get_ptt_article_list(ptt_url=f"https://www.ptt.cc/bbs/Stock/index", page=str(tmp_page))
-        title_df = pd.DataFrame(title_dict)
-        title_df_list.append(title_df)
-    all_title_df = pd.concat(title_df_list, ignore_index=True)
-    all_title_df = all_title_df[~all_title_df['AID'].isin(downloaded_AID_set)]
-    all_title_df['upload_date'] = upload_date
+        # 留下沒抓過的，轉成df格式
+        title_df = pd.DataFrame(title_dict for title_dict in title_dict if title_dict['AID'] not in downloaded_AID_set)
+        if not title_df.empty:
+            title_df['upload_date'] = upload_date
+            # 塞到db
+            title_df.to_sql('ppt_article_ids', conn, if_exists='append', index=False)
+            conn.commit()
+        else:
+            print(f'    Page:{tmp_page} have no new article.')
 
-    # save to db
-    # all_title_df = pd.read_sql('select * from header',conn)
-    all_title_df.to_sql('ppt_article_ids', conn, if_exists='append', index=False)
-    # all_title_df.to_sql('ppt_article_ids', conn, if_exists='replace', index=False)
-    conn.commit()
-    print('End downloaded page list and ids')
+        # 若存在已經抓過的AID則停止
+        if sum(1 for title_dict in title_dict if
+               title_dict['AID'] in downloaded_AID_set) > 0 and stop_when_have_downloaded:
+            print(f'    Page:{tmp_page} have downloaded article. Stop download.')
+            break
+    print('End downloaded latest aids')
 
     print('Start download article detail by ppt_article_ids')
     ## download text by ppt_article_ids
@@ -184,18 +182,20 @@ if __name__ == '__main__':
 
     all_title_df = pd.read_sql(get_ids_sql, conn)
 
-    all_title_df.sort_values(by='page', inplace=True, ignore_index=True)  # 依照page排序，早的資料先抓
+    all_title_df.sort_values(by='AID', inplace=True, ignore_index=True)  # 依照AID排序，早的資料先抓
 
-    # page+AID的tuple
-    AID_tuple_list = all_title_df.apply(lambda x: (x['page'], x['AID']), axis=1).tolist()
-    print(f' Total have {len(AID_tuple_list)}   AID to download.')
+    # AID的list
+    AID_list = all_title_df['AID'].tolist()
+    print(f' Total have {len(AID_list)}  AID to download.')
 
     batch_size = 500
 
-    for i in range(0, len(AID_tuple_list), batch_size):  # i=0
-        print(f'Start processed {i}~{i + batch_size}/{len(AID_tuple_list)} articles.')
-        tmp_AID_tuple_list = AID_tuple_list[i:i + batch_size]
-        responses = asyncio.run(get_batch_response(tmp_AID_tuple_list))
+    for i in range(0, len(AID_list), batch_size):  # i=0
+        end_i = min(i + batch_size, len(AID_list))
+
+        print(f'Start processed {i}~{end_i}/{len(AID_list)} articles.')
+        tmp_AID_list = AID_list[i:end_i]
+        responses = asyncio.run(get_batch_response(tmp_AID_list))
         detail_df_list = list(map(process_response, responses))
         all_detail_df = pd.DataFrame([x for x in detail_df_list if x is not None])
         if not all_detail_df.empty:
@@ -233,6 +233,6 @@ if __name__ == '__main__':
         else:
             print('There is no article.')
 
-        print(f'End processed {i}~{i + batch_size}/{len(AID_tuple_list)} articles.')
+        print(f'End processed {i}~{end_i}/{len(AID_list)} articles.')
 
     print('End downloaded text by ppt_article_ids')
