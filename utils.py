@@ -26,8 +26,8 @@ def get_stock_code_and_date_return(stock_code_and_date_df, code_col_name, date_c
         tmp_return_dict[date_col_name] = row[date_col_name]
         try:
             tmp_return_dict.update(
-                MyStock(row[code_col_name], initial_fetch=False).back_test(pd.to_datetime(row[date_col_name]),
-                                                                           test_day_list=return_days_int_list))
+                MyStock(row[code_col_name], initial_fetch=False).cal_return(pd.to_datetime(row[date_col_name]),
+                                                                            test_day_list=return_days_int_list))
             tmp_return_dict['is_success_get_return_data'] = True
         except:
             tmp_return_dict['is_success_get_return_data'] = False

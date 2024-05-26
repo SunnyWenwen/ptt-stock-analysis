@@ -22,9 +22,9 @@ if __name__ == '__main__':
     # 用一年前日期計算報酬率
     now = datetime.datetime.now()
     now -= datetime.timedelta(days=365)
-    stock.back_test(now)
+    stock.cal_return(now)
 
     # 用指定日期計算報酬率
-    stock.back_test(datetime.datetime(2023, 3, 5))
+    stock.cal_return(datetime.datetime(2023, 3, 5))
 
     print('測試完成')
