@@ -26,5 +26,7 @@ echo %ymd% %time%----Run D2_P1_summary_target_article_return.py >> %log_path%
 python -u .\D2_P1_summary_target_article_return.py | tee -a %python_log_path%\%ymd%.txt
 echo %ymd% %time%----Run D2_P2_find_top_return_author.py >> %log_path%
 python -u .\D2_P2_find_top_return_author.py | tee -a %python_log_path%\%ymd%.txt
+echo %ymd% %time%----Run D2_P5_upload_date_to_google_document.py >> %log_path%
+python -u .\D2_P5_upload_date_to_google_document.py | tee -a %python_log_path%\%ymd%.txt
 
 echo %ymd% %time%----Complete run Python  >> %log_path%
