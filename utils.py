@@ -10,7 +10,7 @@ def get_stock_code_from_title(stock_code):
     return re.search(r'\d{4}', stock_code).group() if re.search(r'\d{4}', stock_code) else None
 
 
-def get_stock_code_and_date_return(stock_code_and_date_df, code_col_name, date_col_name):
+def get_stock_code_and_date_return(stock_code_and_date_df, code_col_name, date_col_name, adjust_by_taiex=False):
     # 共有幾筆資料
     print(f'Total have {len(stock_code_and_date_df)} articles need to cal return.')
 
@@ -30,7 +30,9 @@ def get_stock_code_and_date_return(stock_code_and_date_df, code_col_name, date_c
                 MyStock(row[code_col_name], initial_fetch=False, silent=True).cal_return(
                     pd.to_datetime(row[date_col_name]),
                     test_day_list=return_days_int_list,
-                    silent=True))
+                    silent=True,
+                    adjust_by_taiex=adjust_by_taiex))
+
             tmp_return_dict['is_success_get_return_data'] = True
         except:
             tmp_return_dict['is_success_get_return_data'] = False

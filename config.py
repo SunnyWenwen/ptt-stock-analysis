@@ -15,6 +15,13 @@ return_days_int_list = [int(x) for x in return_days_map.keys()]
 return_days_str_list = [str(x) for x in return_days_map.keys()]
 return_days_show_str_list = [str(x) for x in return_days_map.values()]
 
+return_days_adj_map = return_days_map.copy()
+return_days_adj_map.update({key + '_adj': value + '_adj' for key, value in return_days_map.items()})
+return_days_adj_str_list = [str(x) for x in return_days_adj_map.keys()]
+return_days_adj_show_str_list = [str(x) for x in return_days_adj_map.values()]
+
+return_days_only_adj_show_str_list = [str(x) for x in return_days_adj_map.values() if x not in return_days_map.values()]
+
 # recent_fluctuation
 recent_fluctuation_days_list = [5, 10, 30, 60]
 recent_fluctuation_days_str_list = [str(x) for x in recent_fluctuation_days_list]

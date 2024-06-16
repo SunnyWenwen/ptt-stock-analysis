@@ -16,7 +16,8 @@ rename_dict = {'author0': '作者', 'title': '標題', 'date_format': '發文日
                'target_code': '標的代碼',
                'recent_fluctuation': f"該標的近期漲幅(%)[{'/'.join(recent_fluctuation_days_str_list)} days]",
                'article_CT': '[作者歷史]標的文張數',
-               'all_days_return': f"[作者歷史]標的平均績效(%)[{'/'.join(return_days_str_list)} days]"}
+               'all_days_return': f"[作者歷史]標的平均績效(%)[{'/'.join(return_days_str_list)} days]",
+               'all_days_return_adj': f"[作者歷史]標的平均績效 用大盤校正(%)[{'/'.join(return_days_str_list)} days]"}
 high_perf_auth_latest_article.rename(columns=rename_dict, inplace=True)
 
 # 讀取高績效作者之前的發文紀錄以及績效

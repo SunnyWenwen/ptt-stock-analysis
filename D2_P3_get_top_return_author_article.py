@@ -2,7 +2,7 @@
 import pandas as pd
 
 from config import csv_path, xlsx_path, pre_30_day, recent_fluctuation_days_list, recent_fluctuation_days_str_list, \
-    return_days_show_str_list
+    return_days_show_str_list, return_days_adj_show_str_list, return_days_only_adj_show_str_list
 from db_connect import conn
 from utils import get_stock_code_from_title, get_stock_code_recent_fluctuation
 
@@ -46,13 +46,20 @@ top_return_author_latest_article = top_return_author_latest_article.merge(stock_
 
 # 把他們績效串到後面
 # 先留下小數點後兩位
-top_return_author_df[return_days_show_str_list] = top_return_author_df[
-    return_days_show_str_list].round(2)
-# 先把績效欄位合併
+top_return_author_df[return_days_adj_show_str_list] = top_return_author_df[
+    return_days_adj_show_str_list].round(1)
+
+# 先把績效欄位合併(原始與adj分開合併)
+# 原始合併
 top_return_author_df['all_days_return'] = top_return_author_df.apply(
     lambda x: '/'.join(map(str, x[return_days_show_str_list])), axis=1)
+
+# adj合併
+top_return_author_df['all_days_return_adj'] = top_return_author_df.apply(
+    lambda x: '/'.join(map(str, x[return_days_only_adj_show_str_list])), axis=1)
+
 # 去掉return_days_show_str_list
-top_return_author_df.drop(columns=return_days_show_str_list, inplace=True)
+top_return_author_df.drop(columns=return_days_adj_show_str_list, inplace=True)
 
 top_return_author_latest_article = top_return_author_latest_article.merge(top_return_author_df, on='author0',
                                                                           how='left')

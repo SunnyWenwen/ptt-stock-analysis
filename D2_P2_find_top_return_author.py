@@ -1,7 +1,7 @@
 # 分析
 import pandas as pd
 
-from config import csv_path, xlsx_path, return_days_map, return_days_int_list, return_days_show_str_list
+from config import csv_path, xlsx_path, return_days_map, return_days_int_list, return_days_adj_show_str_list
 
 # 計算各author的summary
 # all_target_article_return.csv 資料來自於 D2_P1_summary_target_article_return.py
@@ -33,11 +33,11 @@ all_target_article_return_df.sort_values(by=['post_date'], inplace=True, ignore_
 # 用group by 作者算出平均獲利與發文筆數
 all_target_article_return_df['article_CT'] = 1
 
-agg_dict = {col: 'mean' for col in return_days_show_str_list}
+agg_dict = {col: 'mean' for col in return_days_adj_show_str_list}
 agg_dict['article_CT'] = 'count'
 
 # 把等等要算mean的欄位轉成float
-for tmp_col in return_days_show_str_list:
+for tmp_col in return_days_adj_show_str_list:
     all_target_article_return_df[tmp_col] = all_target_article_return_df[tmp_col].astype(float)
 
 author_return_eval_df = all_target_article_return_df.groupby(['author0'], as_index=False).aggregate(
@@ -57,7 +57,7 @@ author_return_eval_df = author_return_eval_df[author_return_eval_df['article_CT'
 
 top_return_author_list = []
 # 個時間段獲利最高的top n
-for tmp_day in return_days_show_str_list:
+for tmp_day in return_days_adj_show_str_list:
     tmp_top_return_author = author_return_eval_df.sort_values(by=[tmp_day], ascending=False).head(20)
     top_return_author_list.append(tmp_top_return_author)
 
