@@ -5,23 +5,18 @@ from email.mime.text import MIMEText
 import pandas as pd
 
 from config import csv_path, mail_path, today_ymd, username, host, port, password, return_days_show_str_list, \
-    mail_return_days_map
+    recent_fluctuation_days_str_list, return_days_str_list, mode
 
 print('Start get top_return_author_latest_article')
 # 讀取高績效作者最近的發文
 high_perf_auth_latest_article = pd.read_csv(csv_path + 'top_return_author_latest_article.csv')
-# 留下部分欄位就好
-high_perf_auth_latest_article = high_perf_auth_latest_article[
-    ['author0', 'title', 'date_format', 'url', 'article_CT'] + return_days_show_str_list]
-
-# 部分欄位取到小數點後兩位
-high_perf_auth_latest_article[return_days_show_str_list] = high_perf_auth_latest_article[
-    return_days_show_str_list].round(2)
 
 # 欄位重新命名
 rename_dict = {'author0': '作者', 'title': '標題', 'date_format': '發文日期', 'url': 'ptt網址',
-               'article_CT': '發標的文次數'}
-rename_dict.update(mail_return_days_map)
+               'target_code': '標的代碼',
+               'recent_fluctuation': f"該標的近期漲幅(%)[{'/'.join(recent_fluctuation_days_str_list)} days]",
+               'article_CT': '[作者歷史]標的文張數',
+               'all_days_return': f"[作者歷史]標的平均績效(%)[{'/'.join(return_days_str_list)} days]"}
 high_perf_auth_latest_article.rename(columns=rename_dict, inplace=True)
 
 # 讀取高績效作者之前的發文紀錄以及績效
@@ -52,7 +47,10 @@ real_from_email = username
 # context
 subject = f'[{today_ymd}]PTT high-performing authors latest target article.'
 mail_list = pd.read_csv('mail_list.csv')
-show_to_list = mail_list['mail_list'].tolist()
+if mode == 'dev':
+    show_to_list = ['u102021112@gmail.com', 'p147896325p@gmail.com']
+else:
+    show_to_list = mail_list['mail_list'].tolist()
 show_from = username
 
 msg = MIMEMultipart()

@@ -1,5 +1,7 @@
 import datetime
 
+mode = 'dev'  # 'dev' or 'prod'
+
 date_format = '%Y-%m-%d %H:%M:%S'
 upload_date = datetime.datetime.now().strftime(date_format)
 pre_30_day = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime(date_format)
@@ -13,9 +15,9 @@ return_days_int_list = [int(x) for x in return_days_map.keys()]
 return_days_str_list = [str(x) for x in return_days_map.keys()]
 return_days_show_str_list = [str(x) for x in return_days_map.values()]
 
-mail_return_days_map = {'10days_return': '歷史10天平均績效', '30days_return': '歷史30天平均績效',
-                        '60days_return': '歷史60天平均績效', '120days_return': '歷史120天平均績效',
-                        '180days_return': '歷史180天平均績效', '360days_return': '歷史360天平均績效'}
+# recent_fluctuation
+recent_fluctuation_days_list = [5, 10, 30, 60]
+recent_fluctuation_days_str_list = [str(x) for x in recent_fluctuation_days_list]
 
 # db path
 db_path = 'C:/Users/User/iCloudDrive/share_data/db/'

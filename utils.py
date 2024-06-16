@@ -36,3 +36,18 @@ def get_stock_code_and_date_return(stock_code_and_date_df, code_col_name, date_c
             tmp_return_dict['is_success_get_return_data'] = False
         return_dict_list.append(tmp_return_dict)
     return pd.DataFrame(return_dict_list)
+
+
+def get_stock_code_recent_fluctuation(stock_code: set, days_list=[5, 10, 30, 60]):
+    return_dict_list = []
+    for tmp_code in stock_code:
+        tmp_return_dict = {}
+        tmp_return_dict['target_code'] = tmp_code
+        try:
+            tmp_return_dict.update(
+                MyStock(tmp_code, initial_fetch=False, silent=True).recent_fluctuation(days_list=days_list))
+            tmp_return_dict['is_success_get_recent_fluctuation'] = True
+        except:
+            tmp_return_dict['is_success_get_recent_fluctuation'] = False
+        return_dict_list.append(tmp_return_dict)
+    return pd.DataFrame(return_dict_list)
