@@ -19,31 +19,6 @@ high_perf_auth_article = pd.read_sql(
 top_return_author_latest_article = high_perf_auth_article[
     high_perf_auth_article['date_format'] >= pre_30_day].reset_index(drop=True)
 
-# 放入已推薦文件紀錄的TABLE
-top_return_author_latest_article_log = top_return_author_latest_article.copy()
-top_return_author_latest_article_log['first_recommend_date'] = pd.to_datetime('today').strftime('%Y-%m-%d')
-top_return_author_latest_article_log = top_return_author_latest_article_log[
-    ['AID', 'author0', 'title', 'date_format', 'url', 'first_recommend_date']]
-# 先用AID確認有沒有重複
-# 先確認TABLE是否存在
-check_table_sql = "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='top_return_author_latest_article_log'"
-check_table = conn.execute(check_table_sql).fetchone()[0]
-if check_table == 0:
-    # 沒寫過直接寫入
-    top_return_author_latest_article_log.to_sql('top_return_author_latest_article_log', conn, index=False)
-    # 刪除top_return_author_latest_article_log 整個TABLE(測試用)
-    # conn.execute("DROP TABLE top_return_author_latest_article_log")
-
-else:
-    # 確認有沒有重複
-    aid_set = set(pd.read_sql("SELECT AID FROM top_return_author_latest_article_log", conn)['AID'])
-    # 去掉重複的
-    top_return_author_latest_article_log = top_return_author_latest_article_log[
-        ~top_return_author_latest_article_log['AID'].isin(aid_set)]
-    # 寫入
-    top_return_author_latest_article_log.to_sql('top_return_author_latest_article_log', conn, if_exists='append',
-                                                index=False)
-
 # 留下指定欄位
 top_return_author_latest_article = top_return_author_latest_article[['author0', 'title', 'date_format', 'url']]
 print(f'lately article count: {len(top_return_author_latest_article)}')
@@ -91,6 +66,33 @@ top_return_author_latest_article = top_return_author_latest_article.merge(top_re
 
 # 時間近的在前面
 top_return_author_latest_article.sort_values(by=['date_format'], inplace=True, ignore_index=True, ascending=False)
+
+# 放入已推薦文件紀錄的TABLE
+top_return_author_latest_article_log = top_return_author_latest_article.copy()
+top_return_author_latest_article_log['first_recommend_date'] = pd.to_datetime('today').strftime('%Y-%m-%d')
+top_return_author_latest_article_log = top_return_author_latest_article_log[
+    ['author0', 'title', 'date_format', 'url', 'target_code', 'recent_fluctuation', 'article_CT', 'all_days_return',
+     'all_days_return_adj', 'first_recommend_date']]
+
+# 先用AID確認有沒有重複
+# 先確認TABLE是否存在
+check_table_sql = "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='top_return_author_latest_article_log'"
+check_table = conn.execute(check_table_sql).fetchone()[0]
+if check_table == 0:
+    # 沒寫過直接寫入
+    top_return_author_latest_article_log.to_sql('top_return_author_latest_article_log', conn, index=False)
+    # 刪除top_return_author_latest_article_log 整個TABLE(測試用)
+    # conn.execute("DROP TABLE top_return_author_latest_article_log")
+
+else:
+    # 確認有沒有重複
+    aid_set = set(pd.read_sql("SELECT url FROM top_return_author_latest_article_log", conn)['url'])
+    # 去掉重複的
+    top_return_author_latest_article_log = top_return_author_latest_article_log[
+        ~top_return_author_latest_article_log['url'].isin(aid_set)]
+    # 寫入
+    top_return_author_latest_article_log.to_sql('top_return_author_latest_article_log', conn, if_exists='append',
+                                                index=False)
 
 # 寫成xlsx and csv
 top_return_author_latest_article.to_excel(xlsx_path + 'top_return_author_latest_article.xlsx', index=False)
