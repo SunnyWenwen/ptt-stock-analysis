@@ -43,6 +43,9 @@ for tmp_col in return_days_adj_show_str_list:
 author_return_eval_df = all_target_article_return_df.groupby(['author0'], as_index=False).aggregate(
     agg_dict).sort_values(by=['article_CT'], ascending=False, ignore_index=True)
 print(f"Total had {len(author_return_eval_df)} authors be summarized.")
+# 把資料留下小數點後兩位
+for tmp_col in return_days_adj_show_str_list:
+    author_return_eval_df[tmp_col] = author_return_eval_df[tmp_col].round(2)
 
 # xlsx
 author_return_eval_df.to_excel(xlsx_path + 'author_return_summary.xlsx', index=False)
