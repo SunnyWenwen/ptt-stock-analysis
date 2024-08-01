@@ -14,15 +14,15 @@ print(wks_list)
 # 讀取需要寫入的檔案
 all_target_article_return_df = pd.read_excel(xlsx_path + 'all_target_article_return.xlsx')
 all_target_article_return_df.rename(
-    columns={'title': 'article_title', 'url': 'article_url', 'target_code': 'recommendation_code'}, inplace=True)
+    columns={'title': 'post_title', 'url': 'post_url', 'target_code': 'recommendation_code'}, inplace=True)
 author_return_summary = pd.read_excel(xlsx_path + 'author_return_summary.xlsx')
 
 # 開始寫入
 
 print('Start upload to google document.')
-print('Start upload all_target_article_return.')
+print('Start upload all_recommendation_post_return.')
 # 先寫入all_target_article_return
-wks = sht.worksheet_by_title('all_recommendation_article_return')
+wks = sht.worksheet_by_title('all_recommendation_post_return')
 # 可能會超過上限，最新的排前面
 all_target_article_return_df.sort_values(by=['post_date'], inplace=True, ignore_index=True, ascending=False)
 
@@ -31,7 +31,7 @@ try:
     wks.set_dataframe(all_target_article_return_df, 'A1')  # 從欄位 A1 開始
 except Exception as e:
     print(e)
-print('all_target_article_return has been uploaded.')
+print('all_recommendation_post_return has been uploaded.')
 
 print('Start upload author_return_summary.')
 # 寫入author_return_summary

@@ -46,7 +46,7 @@ real_from_email = username
 # df.to_csv(csv_file, index=False)
 
 # context
-subject = f'[{today_ymd}]PTT high-performing authors latest recommendation article.'
+subject = f'[{today_ymd}]PTT high-performing authors latest recommendation post.'
 mail_list = pd.read_csv('mail_list.csv')
 if mode == 'dev':
     show_to_list = ['u102021112@gmail.com', 'p147896325p@gmail.com']
@@ -61,7 +61,7 @@ msg['To'] = username
 # msg['Bcc'] = ";".join(show_to_list)
 
 # plain text 1
-plain_text_part = MIMEText("Within 30 days, the recommendation article of high-performing authors.\n", 'plain')
+plain_text_part = MIMEText("Within 30 days, the recommendation post of high-performing authors.\n", 'plain')
 msg.attach(plain_text_part)  # 郵件純文字內容
 
 # dataframe
@@ -70,7 +70,7 @@ html_part = MIMEText(html_table, 'html')
 msg.attach(html_part)
 
 # plain text 2
-plain_text_part = MIMEText("\nFor historical recommendation article by each author, please refer to the attachment.\n",
+plain_text_part = MIMEText("\nFor historical recommendation post by each author, please refer to the attachment.\n",
                            'plain')
 msg.attach(plain_text_part)
 
@@ -80,7 +80,7 @@ plain_text_part = MIMEText(
     <html>
         <body>
             <p> 
-        More information about recommendation article return and author return summary can 
+        More information about recommendation post return and author return summary can 
         click <a href="https://docs.google.com/spreadsheets/d/1vNf7zi-a1KM_c2CsLQL_HmO6rdsfwmPHnjVC-pAEP6k/edit?usp=sharing">link</a> 
             </p>
         </body>
