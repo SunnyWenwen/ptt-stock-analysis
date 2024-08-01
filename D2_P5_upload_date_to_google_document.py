@@ -13,6 +13,8 @@ print(wks_list)
 
 # 讀取需要寫入的檔案
 all_target_article_return_df = pd.read_excel(xlsx_path + 'all_target_article_return.xlsx')
+all_target_article_return_df.rename(
+    columns={'title': 'article_title', 'url': 'article_url', 'target_code': 'recommendation_code'}, inplace=True)
 author_return_summary = pd.read_excel(xlsx_path + 'author_return_summary.xlsx')
 
 # 開始寫入
