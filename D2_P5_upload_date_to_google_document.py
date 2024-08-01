@@ -16,7 +16,7 @@ all_target_article_return_df = pd.read_excel(xlsx_path + 'all_target_article_ret
 all_target_article_return_df.rename(
     columns={'title': 'post_title', 'url': 'post_url', 'target_code': 'recommendation_code'}, inplace=True)
 author_return_summary = pd.read_excel(xlsx_path + 'author_return_summary.xlsx')
-
+author_return_summary.rename(columns={'article_CT': 'post_CT'}, inplace=True)
 # 開始寫入
 
 print('Start upload to google document.')
