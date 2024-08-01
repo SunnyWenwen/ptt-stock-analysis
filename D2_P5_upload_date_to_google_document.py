@@ -20,7 +20,7 @@ author_return_summary = pd.read_excel(xlsx_path + 'author_return_summary.xlsx')
 print('Start upload to google document.')
 print('Start upload all_target_article_return.')
 # 先寫入all_target_article_return
-wks = sht.worksheet_by_title('all_target_article_return')
+wks = sht.worksheet_by_title('all_recommendation_article_return')
 # 可能會超過上限，最新的排前面
 all_target_article_return_df.sort_values(by=['post_date'], inplace=True, ignore_index=True, ascending=False)
 
